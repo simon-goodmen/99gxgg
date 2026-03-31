@@ -411,6 +411,7 @@ const Profile = () => {
           <button className="settings-save-btn" onClick={handleSaveSettings}>
             <Save size={16} /> 保存设置
           </button>
+          <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.0</div>
           <div className="logout-action" onClick={handleLogout}>退出当前管理账号</div>
         </div>
       </div>
@@ -440,7 +441,7 @@ const Profile = () => {
               ) : (
                 <div className="user-name-row">
                   <h2>准采购经理</h2>
-                </div>
+                </div v>
               )}
             </div>
           </div>
@@ -590,6 +591,7 @@ const Profile = () => {
               </div>
             </div>
 
+            <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.0</div>
             <div className="logout-action" onClick={handleLogout}>退出当前管理账号</div>
           </>
         ) : (
