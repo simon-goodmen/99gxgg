@@ -1,0 +1,63 @@
+<!-- pages/tracking/index.wxml -->
+<view class="tracking-page">
+  <!-- Tab Switcher -->
+  <view class="tab-switcher-container">
+    <view class="tab-switcher premium-tabs">
+      <view 
+        wx:for="{{tabs}}" wx:key="id"
+        class="tab-item {{activeTab === item.id ? 'active' : ''}}"
+        bindtap="onTabChange" data-id="{{item.id}}"
+      >
+        <text class="tab-icon">{{item.icon}}</text>
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Orders List -->
+  <view class="orders-container">
+    <view class="empty-state" wx:if="{{currentOrders.length === 0}}">暂无待处理订单</view>
+    
+    <view 
+      class="order-accordion card {{expandedOrderId === item.id ? 'expanded-mode' : ''}}" 
+      wx:for="{{currentOrders}}" wx:key="id"
+    >
+      <!-- Summary Header -->
+      <view class="order-summary" bindtap="toggleOrder" data-id="{{item.id}}">
+        <view class="order-main-info">
+          <view class="order-id-row">
+            <text class="order-id-tag">#{{item.id}}</text>
+            <text class="order-date">{{item.date}}</text>
+          </view>
+          <view class="order-title">{{item.title}}</view>
+        </view>
+        <view class="order-status-area">
+          <text class="status-pill {{item.status}}">
+            {{item.status === 'completed' ? '已完成' : item.status === 'processing' ? '处理中' : '待处理'}}
+          </text>
+          <view class="chevron {{expandedOrderId === item.id ? 'rotated' : ''}}">▼</view>
+        </view>
+      </view>
+
+      <!-- Timeline Details -->
+      <view class="order-details-body" wx:if="{{expandedOrderId === item.id}}">
+        <view class="timeline-container">
+          <view 
+            class="timeline-step {{node.status}}" 
+            wx:for="{{item.nodes}}" wx:key="id" wx:for-item="node"
+          >
+            <view class="step-marker">
+              <view class="marker-dot" wx:if="{{node.status === 'pending'}}"></view>
+              <view class="marker-icon" wx:else>{{node.status === 'completed' ? '✓' : '🕒'}}</view>
+              <view class="marker-line" wx:if="{{index < item.nodes.length - 1}}"></view>
+            </view>
+            <view class="step-content">
+              <view class="step-title">{{node.name}}</view>
+              <view class="step-time">{{node.time}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

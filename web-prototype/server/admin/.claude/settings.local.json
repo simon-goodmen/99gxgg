@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/github/99gxgg/web-prototype/server/**)",
+      "Read(//d/github/99gxgg/web-prototype/**)",
+      "Bash(mysql:*)"
+    ]
+  }
+}

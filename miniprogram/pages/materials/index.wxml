@@ -1,0 +1,186 @@
+<!-- pages/materials/index.wxml -->
+<view class="materials-page">
+  <view class="search-bar-container">
+    <view class="search-bar premium-search">
+      <icon type="search" size="18" />
+      <input type="text" placeholder="搜索大宗建材 (砂石、水泥、砖块...)" />
+    </view>
+  </view>
+
+  <view class="materials-layout">
+    <!-- Sidebar -->
+    <scroll-view scroll-y class="sidebar">
+      <view 
+        wx:for="{{categories}}" wx:key="*this"
+        class="sidebar-item {{activeCategory === index ? 'active' : ''}}"
+        bindtap="onCategorySelect" data-index="{{index}}"
+      >
+        <view class="sidebar-dot" wx:if="{{cart[index]}}"></view>
+        <text>{{item}}</text>
+      </view>
+    </scroll-view>
+
+    <!-- Product list / Request list -->
+    <scroll-view scroll-y class="product-area">
+      <view class="category-title">
+        <text class="ct-main">{{categories[activeCategory]}}{{isRequestTab ? '信息' : '直销'}}</text>
+        <text class="ct-sub">{{isRequestTab ? '后台审核通过 · 实名认证' : '郑州同城直供'}}</text>
+      </view>
+
+      <view class="products-list">
+        <block wx:if="{{isRequestTab}}">
+          <view class="request-card card" wx:for="{{approvedRequests}}" wx:key="id">
+            <view class="rq-top">
+              <text class="rq-cat">{{item.category}}</text>
+              <text class="rq-time">🕒 {{item.time}}</text>
+            </view>
+            <view class="rq-title">{{item.title}}</view>
+            <view class="rq-specs">规格: {{item.specs}}</view>
+            <view class="rq-price">价格: {{item.price}}</view>
+            <view class="rq-bottom">
+              <view class="rq-buyer">
+                <text class="rq-name">{{item.buyer}}</text>
+                <text class="rq-project">{{item.project}}</text>
+              </view>
+              <button class="rq-btn">我能供货</button>
+            </view>
+          </view>
+        </block>
+
+        <block wx:else>
+          <view 
+            class="product-card card {{cart[item.id] ? 'active-item' : ''}}" 
+            wx:for="{{currentProducts}}" wx:key="id" 
+            bindtap="openDetail" data-prod="{{item}}"
+          >
+            <view class="in-cart-pill" wx:if="{{cart[item.id]}}">已参与</view>
+            <view class="p-top">
+              <view class="p-img"><text>{{item.img}}</text></view>
+              <view class="p-info">
+                <text class="p-name">{{item.name}}</text>
+                <text class="p-mfr">厂家: {{item.mfr}}</text>
+                <text class="p-model">型号: {{item.model}}</text>
+              </view>
+            </view>
+
+            <view class="crowd-box">
+              <view class="crowd-meta">
+                <text>目标满 {{item.targetQty}}{{item.unit}} 发货</text>
+                <text>锁单后 7 天到场</text>
+              </view>
+              <view class="progress-bg">
+                <view class="progress-fill" style="width:{{(item.currentQty/item.targetQty)*100}}%"></view>
+              </view>
+              <view class="crowd-stats">
+                <text>已拼 {{item.currentQty}}{{item.unit}}</text>
+                <text class="diff">缺口 {{item.targetQty - item.currentQty}}{{item.unit}}</text>
+              </view>
+            </view>
+
+            <view class="price-row">
+              <view class="price-group">
+                <text class="p-label">拼团价</text>
+                <view class="p-val">¥<text class="huge">{{item.groupPrice}}</text>/{{item.unit}}</view>
+                <text class="p-old">郑州现货价 ¥{{item.price}}</text>
+              </view>
+              <button class="join-btn {{cart[item.id] ? 'in' : ''}}">
+                {{cart[item.id] ? '已加拼单' : '我要参与'}}
+              </button>
+            </view>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- Floating Cart Bar -->
+  <view class="floating-cart {{cartCount > 0 ? 'active' : ''}}" bindtap="toggleCart">
+    <view class="cart-icon-wrap">
+      <view class="cart-badge" wx:if="{{cartCount > 0}}">{{Object.keys(cart).length}}</view>
+      <text class="icon-cart">🛒</text>
+    </view>
+    <view class="estimate-text">
+      <block wx:if="{{cartCount > 0}}">
+        <text class="et-total">我的拼单清单: ¥{{cartTotal}}</text>
+        <text class="et-sub">含预估运费 (距工地18.5km)</text>
+      </block>
+      <block wx:else>
+        <text class="et-total">尚未参与本期拼团</text>
+        <text class="et-sub">直接从源头走货，享受组团最低价</text>
+      </block>
+    </view>
+    <button class="view-cart-btn" wx:if="{{cartCount > 0}}">查看清单</button>
+  </view>
+
+  <!-- Product Detail Drawer -->
+  <view class="modal-backdrop" wx:if="{{selectedProduct}}" bindtap="closeDetail"></view>
+  <view class="bottom-sheet" wx:if="{{selectedProduct}}">
+    <view class="sheet-header">
+      <view class="sh-prod">
+        <text class="sh-emoji">{{selectedProduct.img}}</text>
+        <view class="sh-info">
+          <text class="sh-name">{{selectedProduct.name}}</text>
+          <text class="sh-price">拼团价: ¥{{selectedProduct.groupPrice}}/{{selectedProduct.unit}}</text>
+        </view>
+      </view>
+      <view class="close-btn" bindtap="closeDetail">×</view>
+    </view>
+    <view class="sheet-content">
+      <view class="sheet-section">
+        <text class="sec-title">服务选项</text>
+        <view class="opt-row" bindtap="toggleTax">
+          <text>含税 (+3%)</text>
+          <checkbox checked="{{includeTax}}" />
+        </view>
+        <view class="opt-row" bindtap="toggleFreight">
+          <view class="opt-text">
+            <text>含运费</text>
+            <text class="opt-sub">预估: ¥15/{{selectedProduct.unit}}</text>
+          </view>
+          <checkbox checked="{{includeFreight}}" />
+        </view>
+        <view class="opt-row" bindtap="toggleUnload">
+          <text>含卸车 (+10/{{selectedProduct.unit}})</text>
+          <checkbox checked="{{includeUnload}}" />
+        </view>
+      </view>
+      <view class="sheet-section no-border">
+        <text class="sec-title">预定拼购数量 ({{selectedProduct.unit}})</text>
+        <view class="qty-control">
+          <input type="number" value="{{quantity}}" bindinput="onQtyChange" />
+        </view>
+      </view>
+      <button class="add-cart-btn" bindtap="addToCart">确认参与拼单</button>
+    </view>
+  </view>
+
+  <!-- Cart Drawer -->
+  <view class="modal-backdrop" wx:if="{{showCart}}" bindtap="toggleCart"></view>
+  <view class="bottom-sheet" wx:if="{{showCart}}">
+    <view class="sheet-header">
+      <text class="sheet-title">我的拼购清单</text>
+      <view class="close-btn" bindtap="toggleCart">×</view>
+    </view>
+    <scroll-view scroll-y class="cart-list">
+      <view class="cart-item" wx:for="{{cart}}" wx:key="id">
+        <text class="ci-img">{{item.product.img}}</text>
+        <view class="ci-info">
+          <text class="ci-name">{{item.product.name}}</text>
+          <text class="ci-meta">¥{{item.product.groupPrice}}/{{item.product.unit}} x {{item.qty}}</text>
+          <view class="ci-tags">
+            <text class="tag" wx:if="{{item.tax}}">含税</text>
+            <text class="tag" wx:if="{{item.freight}}">含运</text>
+            <text class="tag" wx:if="{{item.unload}}">含卸</text>
+          </view>
+        </view>
+        <text class="ci-del" bindtap="removeFromCart" data-id="{{index}}">删除</text>
+      </view>
+    </scroll-view>
+    <view class="sheet-footer">
+      <view class="cart-total-info">
+        <text>合计 ¥{{cartTotal}}</text>
+      </view>
+      <button class="checkout-btn" bindtap="handleCheckout">提交拼购需求并锁单</button>
+    </view>
+  </view>
+</view>

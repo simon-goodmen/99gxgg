@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# IDE & OS
+.vscode/
+.idea/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# WeChat Mini Program
+project.private.config.json
+unpackage/
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+/tmp/
+*.tmp

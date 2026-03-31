@@ -1,0 +1,192 @@
+<!-- pages/steel/index.wxml -->
+<view class="home-page">
+  <view class="main-content">
+    
+    <!-- Part 1: Dashboard Hero Card -->
+    <view class="dashboard-card card premium-card">
+      <view class="card-accent" />
+      <view class="dash-header">
+        <view class="factory-selector-pill" bindtap="openFactoryModal">
+          <text class="fs-name">{{currentFactory.name}}</text>
+          <text class="chevron">▼</text>
+        </view>
+        <view class="live-indicator">
+          <view class="dot-pulse" />
+          <text class="status-lbl">{{currentFactory.status}}</text>
+        </view>
+      </view>
+
+      <view class="dash-slogan flex-slogan">
+        <view class="price-tag-highlight">99元/吨</view>
+        <view class="slogan-text-group">
+          <view class="slogan-line1">包含场地费和设备使用费</view>
+          <view class="slogan-line2">让您的订单实现最大的利益转化</view>
+        </view>
+      </view>
+
+      <view class="dash-tag-list">
+        <block wx:for="{{currentFactory.tags}}" wx:key="*this">
+          <text class="info-tag">{{item}}</text>
+        </block>
+      </view>
+
+      <view class="dash-stats feature-highlights">
+        <view class="stat-box">
+          <text class="stat-num" style="color: {{currentFactory.statusColor}}; font-size: 26rpx;">{{currentFactory.status}}</text>
+          <text class="stat-label">工厂状态</text>
+        </view>
+        <view class="stat-box">
+          <text class="stat-num">{{currentFactory.orders}}</text>
+          <text class="stat-label">在产订单</text>
+        </view>
+        <view class="stat-box">
+          <text class="stat-num">{{currentFactory.weeklyCapacity}}</text>
+          <text class="stat-label">周产吨位</text>
+        </view>
+        <view class="stat-box">
+          <text class="stat-num" style="color: {{currentFactory.conditionColor}}; font-size: 26rpx;">{{currentFactory.condition}}</text>
+          <text class="stat-label">今日厂况</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Part 2: Services Grid -->
+    <view class="section-header">
+      <text class="sh-title">我们提供的服务</text>
+      <view class="sh-accent" />
+    </view>
+    
+    <view class="services-grid">
+      <view class="service-card">
+        <view class="svc-icon">📐</view>
+        <text class="svc-title">图纸深化</text>
+        <text class="svc-desc">总工室资深拆图团队支持，提供方案优化、BIM建模及精确套料算量，帮您省材避坑。</text>
+      </view>
+      <view class="service-card">
+        <view class="svc-icon">✂️</view>
+        <text class="svc-title">来料加工</text>
+        <text class="svc-desc">支持自购物料直送厂区，享受全套数控抛丸、等离子精准下料切割与H型钢高标组立服务。</text>
+      </view>
+      <view class="service-card">
+        <view class="svc-icon">👥</view>
+        <text class="svc-title">人工自选</text>
+        <text class="svc-desc">除共享顶尖重型设备外，您可自主聘用我厂全证件齐备的高效焊工与组装班组为您打工作业。</text>
+      </view>
+      <view class="service-card">
+        <view class="svc-icon">🧮</view>
+        <text class="svc-title">辅材核算</text>
+        <text class="svc-desc">所有焊丝、气体消耗、环保油漆与电力定额耗材均按大厂进货成本阳光核计，杜绝糊涂账。</text>
+      </view>
+      <view class="service-card">
+        <view class="svc-icon">💰</view>
+        <text class="svc-title">99元极简付费</text>
+        <text class="svc-desc">每吨仅需99元的使用费，即可完全激活覆盖天车吊装、环保设备等四万平生产线的所有硬件。</text>
+      </view>
+      <view class="service-card">
+        <view class="svc-icon">📄</view>
+        <text class="svc-title">资料配合与投标</text>
+        <text class="svc-desc">专业企划工程部为“合伙人们”提供原厂特级资质背书辅助、标书编制与后期整套质检报告护航。</text>
+      </view>
+    </view>
+
+    <!-- Part 3: Capacity Tracker -->
+    <view class="capacity-section">
+      <view class="capacity-header">
+        <view class="left-title">
+          <text class="icon-clock">📅</text>
+          <text class="c-title">本月工期大盘</text>
+        </view>
+        <text class="month-tag">3月可用档期</text>
+      </view>
+      
+      <view class="capacity-status-card">
+        <view class="status-top">
+          <view class="status-item">
+            <text class="s-label">本月总体总产</text>
+            <view class="s-val">{{currentFactory.monthTotal}} <text class="unit">吨</text></view>
+          </view>
+          <view class="status-item highlight">
+            <text class="s-label">剩余可预订产能</text>
+            <view class="s-val primary">{{currentFactory.monthRemain}} <text class="unit">吨</text></view>
+          </view>
+        </view>
+        
+        <view class="progress-box">
+          <view class="progress-bar">
+            <view class="progress-fill" style="width: {{currentFactory.percentage}}%"></view>
+          </view>
+          <view class="progress-labels">
+            <text class="pl-left">排产{{currentFactory.timelineStatus}}</text>
+            <text class="pl-right">排期已达 {{currentFactory.percentage}}%</text>
+          </view>
+        </view>
+
+        <view class="timeline-blocks">
+          <block wx:for="{{currentFactory.timelineBlocks}}" wx:key="name">
+            <view class="t-block {{item.theme}}">{{item.name}}</view>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <!-- Part 4: CTA Button -->
+    <view class="book-now-section">
+      <button class="book-btn-giant" bindtap="openBookingModal">
+        ⚡ 立即锁定档期，马上排产
+      </button>
+    </view>
+  </view>
+
+  <!-- Modals (Simplified versions of Web sheets) -->
+  <view class="modal-backdrop" wx:if="{{showFactoryModal}}" bindtap="closeFactoryModal"></view>
+  <view class="bottom-sheet" wx:if="{{showFactoryModal}}">
+    <view class="sheet-header">
+      <text class="sheet-title">切换为您服务的主控工厂</text>
+      <view class="close-btn" bindtap="closeFactoryModal">×</view>
+    </view>
+    <scroll-view scroll-y class="sheet-content factory-list">
+      <block wx:for="{{factories}}" wx:key="id">
+        <view class="factory-item {{activeFactoryIdx === index ? 'active' : ''}}" bindtap="selectFactory" data-index="{{index}}">
+          <view class="f-info">
+            <text class="f-name">{{item.name}}</text>
+            <view class="f-meta">
+              <text style="color: {{item.statusColor}}">{{item.status}}</text>
+              <text>| 剩余产能: {{item.monthRemain}}吨</text>
+            </view>
+          </view>
+          <text class="f-check" wx:if="{{activeFactoryIdx === index}}">✓</text>
+        </view>
+      </block>
+    </scroll-view>
+  </view>
+
+  <!-- Booking Modal Placeholder -->
+  <view class="modal-backdrop" wx:if="{{showBookingModal}}" bindtap="closeBookingModal"></view>
+  <view class="bottom-sheet" wx:if="{{showBookingModal}}">
+    <view class="sheet-header">
+      <text class="sheet-title">排产需求申请</text>
+      <view class="close-btn" bindtap="closeBookingModal">×</view>
+    </view>
+    <view class="sheet-content booking-form">
+      <view class="form-item">
+        <text class="label">预估吨位 (吨) *</text>
+        <input type="number" placeholder="例如: 300" bindinput="onTonnageInput" value="{{formTonnage}}"/>
+      </view>
+      <view class="form-item">
+        <text class="label">计划进场日期</text>
+        <picker mode="date" bindchange="onDateChange">
+          <view class="picker-val">{{formDate || '请选择日期'}}</view>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="label">联系人姓名 *</text>
+        <input type="text" placeholder="怎么称呼您" bindinput="onNameInput" value="{{contactName}}"/>
+      </view>
+      <view class="form-item">
+        <text class="label">联系电话 *</text>
+        <input type="tel" placeholder="接收占位确认码" bindinput="onPhoneInput" value="{{contactPhone}}"/>
+      </view>
+      <button class="confirm-btn" bindtap="handleSubmit">提交排产需求</button>
+    </view>
+  </view>
+</view>

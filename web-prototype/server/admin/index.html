@@ -1,0 +1,54 @@
+<!-- admin/index.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>99共享建材 - 管理员登录</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-card">
+    <div style="font-size: 24px; font-weight: 800; color: var(--primary); margin-bottom: 8px;">99gxgg</div>
+    <h2>管理终端登录</h2>
+    <div id="login-form">
+      <div class="form-group">
+        <label>用户名</label>
+        <input type="text" id="username" value="admin">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="password" value="<REDACTED_ADMIN_PASSWORD>">
+      </div>
+      <button onclick="handleLogin()">进入管理系统</button>
+      <p id="error-msg" style="color: #E53935; font-size: 13px; margin-top: 15px; display: none;"></p>
+    </div>
+  </div>
+
+  <script>
+    async function handleLogin() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      const err = document.getElementById('error-msg');
+      
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem('adminUser', JSON.stringify(data.user));
+          window.location.href = 'dashboard.html';
+        } else {
+          err.style.display = 'block';
+          err.innerText = data.message || '登录失败，请检查账号密码';
+        }
+      } catch (e) {
+        err.style.display = 'block';
+        err.innerText = '后端服务器未启动 (http://localhost:5000)';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!-- pages/concrete/index.wxml -->
+<view class="concrete-page">
+  <view class="main-content">
+    
+    <!-- Part 1: Premium Dashboard Card -->
+    <view class="dashboard-card card premium-card">
+      <view class="card-accent" />
+      <view class="dash-header">
+        <view class="factory-selector-pill" bindtap="openStationSwitcher">
+          <text class="fs-name">{{currentStation.name}}</text>
+          <text class="chevron">▼</text>
+        </view>
+        <view class="live-indicator">
+          <view class="dot-pulse" style="background: {{currentStation.statusColor}}" />
+          <text class="status-lbl" style="color: {{currentStation.statusColor}}">{{currentStation.status}}</text>
+        </view>
+      </view>
+
+      <scroll-view scroll-x class="dash-grade-selector">
+        <block wx:for="{{currentStation.grades}}" wx:key="*this">
+          <view 
+            class="grade-item {{selectedGrade === item ? 'active' : ''}}" 
+            bindtap="onGradeSelect" 
+            data-grade="{{item}}"
+          >
+            {{item}}
+          </view>
+        </block>
+      </scroll-view>
+
+      <view class="dash-slogan flex-slogan">
+        <view class="price-tag-highlight">¥{{currentPrice}}<text class="small-unit">/方</text></view>
+        <view class="slogan-text-group">
+          <view class="slogan-line1">共享厂站最低直供价</view>
+          <view class="slogan-line2">让您的订单实现最大的利益转化</view>
+        </view>
+      </view>
+
+      <view class="dash-tag-list">
+        <block wx:for="{{currentStation.tags}}" wx:key="*this">
+          <text class="info-tag">{{item}}</text>
+        </block>
+      </view>
+
+      <view class="dash-stats feature-highlights">
+        <view class="stat-box">
+          <text class="stat-num" style="color: {{currentStation.statusColor}}">{{currentStation.status}}</text>
+          <text class="stat-label">站点状态</text>
+        </view>
+        <view class="stat-box">
+          <text class="stat-num">{{currentStation.distance}}</text>
+          <text class="stat-label">据您距离</text>
+        </view>
+        <view class="stat-box">
+          <text class="stat-num">{{currentStation.capacity}} <text class="unit">m³</text></text>
+          <text class="stat-label">剩余产能</text>
+        </view>
+        <view class="stat-box">
+          <text class="stat-num" style="color: {{currentStation.conditionColor}}">{{currentStation.condition}}</text>
+          <text class="stat-label">今日站况</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Part 2: Order Booking Form -->
+    <view class="section-header">
+      <text class="sh-title">预定排单</text>
+      <view class="sh-accent" />
+    </view>
+    <view class="card order-form-card">
+      <view class="form-group">
+        <text class="label">意向标号 <text class="req">*</text></text>
+        <picker range="{{currentStation.grades}}" bindchange="onPickerGradeChange" value="{{formGradeIdx}}">
+          <view class="picker-val">{{currentStation.grades[formGradeIdx]}}</view>
+        </picker>
+      </view>
+      
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="label">计划日期 <text class="req">*</text></text>
+          <picker mode="date" bindchange="onDateChange">
+            <view class="picker-val">{{formDate || '请选择'}}</view>
+          </picker>
+        </view>
+        <view class="form-item half">
+          <text class="label">预估方量 (m³) <text class="req">*</text></text>
+          <input type="number" placeholder="如 120" bindinput="onQtyInput" value="{{formQty}}"/>
+        </view>
+      </view>
+      
+      <view class="form-group">
+        <text class="label">项目卸车地址 <text class="req">*</text></text>
+        <input type="text" placeholder="输入浇筑定位" bindinput="onAddressInput" value="{{formAddress}}"/>
+      </view>
+      
+      <button class="add-btn" bindtap="addToList">+ 添加进待排清单</button>
+    </view>
+
+    <!-- Part 3: Cart / Lock Order -->
+    <view class="section-header">
+      <text class="sh-title">待排清单与锁单</text>
+      <view class="sh-accent" />
+    </view>
+    <view class="card cart-card">
+      <view class="list-header">
+        <text>您的待排清单</text>
+        <text class="total-qty">总计: {{totalQty}} m³</text>
+      </view>
+      
+      <block wx:if="{{orderItems.length > 0}}">
+        <view class="order-list">
+          <view class="order-item" wx:for="{{orderItems}}" wx:key="id">
+            <view class="oi-main">
+              <text class="oi-grade">{{item.grade}}</text>
+              <text class="oi-qty">{{item.qty}} m³</text>
+            </view>
+            <view class="oi-sub">
+              <text>{{item.stationName}} · {{item.date}}</text>
+              <text class="oi-del" bindtap="removeItem" data-id="{{item.id}}">删除</text>
+            </view>
+            <view class="oi-address">{{item.address}}</view>
+          </view>
+        </view>
+      </block>
+      <view class="empty-state" wx:else>暂无待排批次，请在上方填写</view>
+      
+      <button class="grab-btn pulse" bindtap="openConfirmModal">确定锁单</button>
+    </view>
+
+    <!-- Part 4: Overview List -->
+    <view class="section-header">
+      <text class="sh-title">本周各站发货进度情况</text>
+      <view class="sh-accent" />
+    </view>
+    <view class="overview-list">
+      <view class="ov-item card" wx:for="{{stations}}" wx:key="id" bindtap="selectStation" data-index="{{index}}">
+        <view class="ov-top">
+          <text class="ov-name">{{item.name}}</text>
+          <text class="status-pill active" style="background: {{item.statusColor}}20; color: {{item.statusColor}}">{{item.status}}</text>
+        </view>
+        <view class="ov-bottom">
+          <view class="progress-bar-small">
+            <view class="progress-fill-small" style="width:{{(item.soldQty/item.weeklyQuota)*100 || 0}}%; background: {{item.statusColor}}"></view>
+          </view>
+          <view class="ov-nums">
+            <text class="ov-quota">{{item.weeklyQuota || '暂停'}} m³</text>
+            <text class="ov-remain" wx:if="{{item.weeklyQuota > 0}}">余 {{item.weeklyQuota - item.soldQty}} m³</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Modals -->
+  <view class="modal-backdrop" wx:if="{{showStationSwitcher}}" bindtap="closeStationSwitcher"></view>
+  <view class="bottom-sheet" wx:if="{{showStationSwitcher}}">
+    <view class="sheet-header">
+      <text class="sheet-title">切换为您服务的商砼站</text>
+      <view class="close-btn" bindtap="closeStationSwitcher">×</view>
+    </view>
+    <scroll-view scroll-y class="factory-list">
+      <view class="factory-item {{activeStationIdx === index ? 'active' : ''}}" wx:for="{{stations}}" wx:key="id" bindtap="selectStation" data-index="{{index}}">
+        <view class="f-info">
+          <text class="f-name">{{item.name}}</text>
+          <view class="f-meta">
+            <text style="color: {{item.statusColor}}">{{item.status}}</text>
+            <text>| 据您 {{item.distance}}</text>
+          </view>
+        </view>
+        <text class="f-check" wx:if="{{activeStationIdx === index}}">✓</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- Final Confirm -->
+  <view class="modal-backdrop center-modal" wx:if="{{showConfirmModal}}">
+    <view class="center-card">
+      <view class="modal-header">
+        <text class="modal-title">完善联系信息</text>
+        <view class="close-btn" bindtap="closeConfirmModal">×</view>
+      </view>
+      <view class="modal-body">
+        <input class="modal-input" placeholder="联系姓名" bindinput="onNameInput" value="{{ordererName}}"/>
+        <input class="modal-input" placeholder="手机号 (接收通知)" type="tel" maxlength="11" bindinput="onPhoneInput" value="{{ordererPhone}}"/>
+        <button class="submit-btn" bindtap="submitFinal">确认提交 {{totalQty}} 方需求</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,114 @@
+<view class="settings-page">
+  <!-- 顶部 -->
+  <view class="settings-header">
+    <view class="settings-back-btn" bindtap="{{''}}">
+      <navigator open-type="navigateBack" class="back-nav">‹ 返回</navigator>
+    </view>
+    <text class="settings-title">个人设置</text>
+    <view style="width:120rpx;"></view>
+  </view>
+
+  <scroll-view scroll-y class="settings-body">
+    <!-- 个人信息 (不含公司) -->
+    <view class="settings-section">
+      <text class="section-title">👤 个人信息</text>
+      <view class="settings-card">
+        <view class="settings-field">
+          <text class="field-label">姓名</text>
+          <input value="{{userInfo.name}}" data-field="name" bindinput="onUserInfoInput" />
+        </view>
+        <view class="settings-field">
+          <text class="field-label">手机号</text>
+          <input value="{{userInfo.phone}}" data-field="phone" bindinput="onUserInfoInput" />
+        </view>
+        <view class="settings-field">
+          <text class="field-label">邮箱</text>
+          <input value="{{userInfo.email}}" data-field="email" bindinput="onUserInfoInput" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 多项目管理 -->
+    <view class="settings-section">
+      <view class="section-row">
+        <text class="section-title">🏢 我的项目</text>
+        <view class="add-project-btn" bindtap="toggleAddProject">⊕ 添加项目</view>
+      </view>
+
+      <!-- 添加新项目表单 -->
+      <view class="new-project-form" wx:if="{{showAddProject}}">
+        <view class="npf-field">
+          <text class="npf-label">项目名称 *</text>
+          <input placeholder="例: 高新区双碳产业园" value="{{newProject.name}}" data-field="name" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">所属公司</text>
+          <input placeholder="甲方或挂靠公司全称" value="{{newProject.company}}" data-field="company" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">项目交付地址</text>
+          <input placeholder="详细地址" value="{{newProject.addr}}" data-field="addr" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">开票抬头</text>
+          <input placeholder="发票抬头公司全称" value="{{newProject.invoiceTitle}}" data-field="invoiceTitle" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">纳税人识别号</text>
+          <input placeholder="税号" value="{{newProject.invoiceTaxId}}" data-field="invoiceTaxId" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">开户银行</text>
+          <input placeholder="例: 中国建设银行XX支行" value="{{newProject.bank}}" data-field="bank" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">银行账号</text>
+          <input placeholder="对公账号" value="{{newProject.bankAccount}}" data-field="bankAccount" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">项目联系电话</text>
+          <input placeholder="项目部座机或负责人手机" value="{{newProject.contactPhone}}" data-field="contactPhone" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-field">
+          <text class="npf-label">项目备注</text>
+          <input placeholder="例: 限高4.2m, 周末不收货" value="{{newProject.notes}}" data-field="notes" bindinput="onNewProjectInput" />
+        </view>
+        <view class="npf-actions">
+          <button class="npf-cancel" bindtap="toggleAddProject">取消</button>
+          <button class="npf-confirm" bindtap="handleAddProject">确认添加</button>
+        </view>
+      </view>
+
+      <!-- 已有项目列表 -->
+      <view class="project-detail-card" wx:for="{{projects}}" wx:key="id">
+        <view class="pdc-header" bindtap="toggleExpandProject" data-id="{{item.id}}">
+          <view class="pdc-left">
+            <view class="pdc-dot"></view>
+            <view>
+              <text class="pdc-name">{{item.name}}</text>
+              <text class="pdc-company">{{item.company}}</text>
+            </view>
+          </view>
+          <text class="pdc-arrow {{expandedProjectId === item.id ? 'rotated' : ''}}">›</text>
+        </view>
+        <view class="pdc-detail" wx:if="{{expandedProjectId === item.id}}">
+          <view class="pdc-row"><text>📍 {{item.addr}}</text></view>
+          <view class="pdc-row"><text>📞 联系电话: {{item.contactPhone}}</text></view>
+          <view class="pdc-divider"></view>
+          <view class="pdc-row"><text>🧾 开票: {{item.invoiceTitle}}</text></view>
+          <view class="pdc-row muted"><text>税号: {{item.invoiceTaxId}}</text></view>
+          <view class="pdc-row"><text>🏦 {{item.bank}}</text></view>
+          <view class="pdc-row muted"><text>账号: {{item.bankAccount}}</text></view>
+          <block wx:if="{{item.notes}}">
+            <view class="pdc-divider"></view>
+            <view class="pdc-row"><text>📝 备注: {{item.notes}}</text></view>
+          </block>
+          <view class="pdc-delete" bindtap="handleDeleteProject" data-id="{{item.id}}">🗑️ 移除此项目</view>
+        </view>
+      </view>
+    </view>
+
+    <button class="settings-save-btn" bindtap="handleSave">💾 保存设置</button>
+    <view class="logout-action" bindtap="handleLogout">退出当前管理账号</view>
+  </scroll-view>
+</view>

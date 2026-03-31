@@ -1,0 +1,93 @@
+/**app.wxss**/
+page {
+  /* ── Design Tokens (Exact parity with Web index.css) ── */
+  --primary:        #0F8265;
+  --primary-deep:   #0A6B52;
+  --primary-light:  #E8F5EE;
+  --primary-glow:   rgba(15, 130, 101, 0.25);
+
+  --surface:        #ffffff;
+  --surface-2:      #F7F8FA;
+  --surface-3:      #F0F2F5;
+  --border:         rgba(0,0,0,0.07);
+
+  --text-h:         #1A1D23;
+  --text-body:      #4A4E58;
+  --text-muted:     #8E929E;
+
+  --danger:         #E53935;
+  --warning:        #FF9800;
+  --success:        #43A047;
+
+  /* px to rpx (1:2) */
+  --radius-xl:      40rpx;
+  --radius-lg:      28rpx;
+  --radius-md:      20rpx;
+  --radius-sm:      12rpx;
+
+  --shadow-xs:      0 2rpx 8rpx rgba(0,0,0,0.06);
+  --shadow-sm:      0 4rpx 20rpx rgba(0,0,0,0.07);
+  --shadow-md:      0 12rpx 48rpx rgba(0,0,0,0.09);
+  --shadow-lg:      0 32rpx 96rpx rgba(0,0,0,0.12);
+
+  --ease:           cubic-bezier(0.4, 0, 0.2, 1);
+  --spring:         cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Global Base Style */
+  background: var(--surface-2);
+  color: var(--text-h);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+view, scroll-view, swiper, button, input, textarea, label, navigator, image {
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Global Utility Components ─────────────────────────── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 32rpx;
+  box-shadow: var(--shadow-xs);
+  margin-bottom: 24rpx;
+}
+
+/* Status Pills */
+.status-pill { font-size: 20rpx; padding: 6rpx 18rpx; border-radius: 20rpx; font-weight: 600; display: inline-block; }
+.status-pill.active   { background: #E8F5E9; color: #43A047; }
+.status-pill.stopped  { background: #FFEBEE; color: #E53935; }
+.status-pill.paused   { background: #FFF3E0; color: #FF9800; }
+.status-pill.vacation { background: #F5F5F5; color: #9E9E9E; }
+
+/* Pulse Animation (Matched with Web Steel page) */
+@keyframes pulse-green {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.dot-pulse {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #4CAF50;
+  box-shadow: 0 0 16rpx #4CAF50;
+  animation: pulse-green 2s infinite;
+}
+
+/* Typography Extensions */
+.text-h1 { font-size: 40rpx; font-weight: 800; color: var(--text-h); }
+.text-h2 { font-size: 36rpx; font-weight: 700; color: var(--text-h); }
+.text-h3 { font-size: 32rpx; font-weight: 700; color: var(--text-h); }
+.text-muted   { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-danger  { color: var(--danger); }
+.text-bold    { font-weight: 700; }

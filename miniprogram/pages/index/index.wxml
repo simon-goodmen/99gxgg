@@ -1,0 +1,64 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <!-- Hero Section -->
+  <view class="hero-section">
+    <view class="hero-bg"></view>
+    <view class="hero-content">
+      <view class="brand-tag">99共享工业</view>
+      <view class="hero-title">数字化共享工厂</view>
+      <view class="hero-subtitle">释放产能 · 降低成本 · 工业互联</view>
+    </view>
+    
+    <!-- Quick Stats -->
+    <view class="stats-bar">
+      <view class="stat-item" wx:for="{{stats}}" wx:key="label">
+        <text class="stat-value">{{item.value}}<text class="stat-unit">{{item.unit}}</text></text>
+        <text class="stat-label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Service Selection -->
+  <view class="main-content">
+    <view class="section-header">
+      <text class="section-title">核心业务板块</text>
+      <text class="section-subtitle">一站式工业互联网共享服务</text>
+    </view>
+
+    <view class="services-list">
+      <view class="service-card" wx:for="{{services}}" wx:key="id" 
+            bindtap="navigateToService" data-path="{{item.path}}">
+        <view class="service-icon-wrap" style="background: {{item.color}}15; color: {{item.color}}">
+          <text class="service-icon">{{item.icon}}</text>
+        </view>
+        <view class="service-info">
+          <view class="service-top">
+            <text class="service-title">{{item.title}}</text>
+            <text class="service-sub-tag">{{item.sub}}</text>
+          </view>
+          <text class="service-desc">{{item.desc}}</text>
+        </view>
+        <view class="arrow-wrap">
+          <text class="arrow">→</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Support Section -->
+    <view class="support-card card" bindtap="onContactUs">
+      <view class="support-content">
+        <view class="support-text">
+          <text class="support-title">需要定制化生产解决方案？</text>
+          <text class="support-desc">我们的业务专家将在5分钟内为您提供响应</text>
+        </view>
+        <view class="support-btn">咨询专家</view>
+      </view>
+    </view>
+
+    <!-- Footer -->
+    <view class="footer-info">
+      <text>© 2026 99共享建材平台 版权所有</text>
+      <text>工业数字化转型引领者</text>
+    </view>
+  </view>
+</view>

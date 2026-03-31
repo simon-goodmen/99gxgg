@@ -1,0 +1,226 @@
+<!-- pages/profile/index.wxml -->
+<view class="profile-page">
+  
+  <!-- View 1: Settings View (Overlays Main) -->
+  <view class="settings-view" wx:if="{{showSettings}}">
+    <view class="settings-header">
+      <view class="settings-back-btn" bindtap="toggleSettings">
+        <text class="chevron">◀</text> Back
+      </view>
+      <text class="sh-title">个人设置</text>
+      <view style="width: 100rpx;"></view>
+    </view>
+    <view class="settings-body">
+      <view class="settings-section">
+        <view class="section-title"><text>👤</text> 个人信息</view>
+        <view class="card settings-card">
+          <view class="field">
+            <text class="label">姓名</text>
+            <input value="{{userInfo.name}}" />
+          </view>
+          <view class="field">
+            <text class="label">手机号</text>
+            <input value="{{userInfo.phone}}" />
+          </view>
+          <view class="field no-border">
+            <text class="label">邮箱</text>
+            <input value="{{userInfo.email}}" />
+          </view>
+        </view>
+      </view>
+
+      <view class="settings-section">
+        <view class="section-row">
+          <view class="section-title"><text>🏢</text> 我的项目</view>
+          <button class="add-proj-btn">+ 添加项目</button>
+        </view>
+        <view 
+          class="project-detail-card card" 
+          wx:for="{{projects}}" wx:key="id"
+          bindtap="toggleProjectExpand" data-id="{{item.id}}"
+        >
+          <view class="pdc-header">
+            <view class="pdc-left">
+              <view class="pdc-dot"></view>
+              <view>
+                <text class="pdc-name">{{item.name}}</text>
+                <text class="pdc-company">{{item.company}}</text>
+              </view>
+            </view>
+            <view class="chevron {{expandedProjectId === item.id ? 'rotated' : ''}}">▼</view>
+          </view>
+          <view class="pdc-detail" wx:if="{{expandedProjectId === item.id}}">
+            <view class="pdc-row">📍 {{item.addr}}</view>
+            <view class="pdc-row">📞 联系电话: {{item.contactPhone}}</view>
+            <view class="pdc-divider"></view>
+            <view class="pdc-row">📄 开票: {{item.invoiceTitle}}</view>
+            <view class="pdc-row sub">税号: {{item.invoiceTaxId}}</view>
+            <view class="pdc-delete">移除此项目</view>
+          </view>
+        </view>
+      </view>
+      
+      <button class="save-settings-btn">保存设置</button>
+      <view class="logout-link" bindtap="handleLogout">退出当前管理账号</view>
+    </view>
+  </view>
+
+  <!-- View 2: Main Profile Page -->
+  <block wx:else>
+    <view class="profile-header-premium">
+      <view class="header-overlay-radial" />
+      <view class="user-profile-box">
+        <view class="upb-left">
+          <view class="avatar-large-glow">
+            {{isLoggedIn ? '标' : '?'}}
+          </view>
+          <view class="user-name-group">
+            <view class="user-name-row">
+              <text class="h2">{{isLoggedIn ? '项目采购负责人 (李)' : '准采购经理'}}</text>
+              <text class="pro-badge" wx:if="{{isLoggedIn}}">高级认证</text>
+            </view>
+            <text class="partner-id" wx:if="{{isLoggedIn}}">采购员 ID: PR-1024-ZZ</text>
+          </view>
+        </view>
+        <view class="settings-icon-btn" bindtap="toggleSettings" wx:if="{{isLoggedIn}}">⚙️</view>
+      </view>
+      
+      <view class="login-invitation" bindtap="handleLogin" wx:if="{{!isLoggedIn}}">
+        <text class="li-label">点击登录 / 注册账号</text>
+        <text class="li-action">立即开启 ▶</text>
+      </view>
+    </view>
+
+    <view class="profile-content {{isLoggedIn ? '' : 'locked'}}">
+      <block wx:if="{{isLoggedIn}}">
+        <button class="publish-req-btn" bindtap="openPublishModal">
+          <text>+</text> 发布新需求
+        </button>
+
+        <view class="stats-row">
+          <view class="stat-item">
+            <view class="num">3</view>
+            <view class="label">执行中底账</view>
+          </view>
+          <view class="stat-item">
+            <view class="num">{{myRequirements.length}}</view>
+            <view class="label">动态需求</view>
+          </view>
+          <view class="stat-item">
+            <view class="num">¥2.4w</view>
+            <view class="label">精益节省</view>
+          </view>
+        </view>
+
+        <view class="section-header">
+          <text class="sh-title">我的需求 (已发布共享)</text>
+        </view>
+        <view class="requirements-grid">
+          <view class="req-card-professional card" wx:for="{{myRequirements}}" wx:key="id">
+            <view class="req-header">
+              <text class="req-id">{{item.id}}</text>
+              <text class="req-tag">{{item.status}}</text>
+            </view>
+            <view class="req-title">{{item.title}}</view>
+            <view class="req-specs">
+              <text class="spec-tag">{{item.specs}}</text>
+              <text class="spec-tag price">{{item.price}}</text>
+            </view>
+            <view class="req-footer">
+              <text class="req-status">🔍 资源匹配中...</text>
+              <text class="req-action">详情 ▶</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="section-header flex-header">
+          <text class="sh-title">项目执行底账</text>
+          <text class="sh-link">查看台账</text>
+        </view>
+        <view class="project-ledger-list">
+          <view class="project-ledger-row card" wx:for="{{projectLedger}}" wx:key="id">
+            <view class="plr-main">
+              <text class="plr-name">{{item.name}}</text>
+              <text class="plr-meta">{{item.subtitle}}</text>
+            </view>
+            <view class="plr-progress-box">
+              <text class="plr-val">{{item.value}}</text>
+              <text class="plr-label">已采比例 {{item.progress}}%</text>
+            </view>
+            <text class="chevron">▶</text>
+          </view>
+        </view>
+
+        <view class="section-header">
+          <text class="sh-title op-light">专业管理工具</text>
+        </view>
+        <view class="menu-card card">
+          <view class="menu-item-premium">
+            <view class="mip-left">
+              <view class="mip-icon industrial-orange">📄</view>
+              <view class="mip-info">
+                <text class="mip-text">电子合同与签证中心</text>
+                <text class="mip-sub">支持甲乙双方在线签约</text>
+              </view>
+            </view>
+            <text class="chevron">▶</text>
+          </view>
+          <view class="menu-item-premium">
+            <view class="mip-left">
+              <view class="mip-icon industrial-green">💰</view>
+              <view class="mip-info">
+                <text class="mip-text">财务对账与结算流水</text>
+                <text class="mip-sub">项目欠款与现金结算返利</text>
+              </view>
+            </view>
+            <text class="chevron">▶</text>
+          </view>
+        </view>
+        <view class="logout-link" bindtap="handleLogout">退出当前管理账号</view>
+      </block>
+      
+      <block wx:else>
+        <view class="guest-content-lock">
+          <text class="lock-icon">📦</text>
+          <text>登录后即可发布采购需求、</text>
+          <text>管理项目底账及查看精益节省明细</text>
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <!-- Publish Modal -->
+  <view class="modal-backdrop" wx:if="{{showPublishModal}}" bindtap="closePublishModal"></view>
+  <view class="bottom-sheet publish-sheet" wx:if="{{showPublishModal}}">
+    <view class="sheet-header">
+      <text class="sheet-title">发布采购需求</text>
+      <view class="close-btn" bindtap="closePublishModal">×</view>
+    </view>
+    <view class="sheet-content">
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="label">采购品类 *</text>
+          <picker range="{{categories}}" bindchange="onCategoryChange">
+            <view class="picker-val">{{categories[formCategoryIdx]}}</view>
+          </picker>
+        </view>
+        <view class="form-item half">
+          <text class="label">采购数量 *</text>
+          <input type="number" placeholder="1000" bindinput="onQtyInput" />
+        </view>
+      </view>
+      <view class="form-item">
+        <text class="label">规格描述 *</text>
+        <input type="text" placeholder="例: 粗砂, 含泥量 < 3%" bindinput="onSpecsInput" />
+      </view>
+      <view class="form-item">
+        <text class="label">价格策略 *</text>
+        <view class="price-chips">
+          <view class="chip {{formPriceType === '面谈' ? 'active' : ''}}" bindtap="onPriceTypeSelect" data-type="面谈">面谈</view>
+          <view class="chip {{formPriceType === '指定价' ? 'active' : ''}}" bindtap="onPriceTypeSelect" data-type="指定价">指定价</view>
+        </view>
+      </view>
+      <button class="publish-btn" bindtap="handlePublish">确认发布至共享资源</button>
+    </view>
+  </view>
+</view>
