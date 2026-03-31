@@ -411,7 +411,7 @@ const Profile = () => {
           <button className="settings-save-btn" onClick={handleSaveSettings}>
             <Save size={16} /> 保存设置
           </button>
-          <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.0</div>
+          <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.1</div>
           <div className="logout-action" onClick={handleLogout}>退出当前管理账号</div>
         </div>
       </div>
@@ -591,7 +591,7 @@ const Profile = () => {
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.0</div>
+            <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.1</div>
             <div className="logout-action" onClick={handleLogout}>退出当前管理账号</div>
           </>
         ) : (
@@ -599,7 +599,7 @@ const Profile = () => {
             <PackageSearch size={48} opacity={0.1} style={{ marginBottom: '20px' }} />
             <p>登录后即可发布采购需求、</p>
             <p>管理项目底账及查看精益节省明细</p>
-            <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '40px' }}>版本号: v1.1.0</div>
+            <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '40px' }}>版本号: v1.1.1</div>
           </div>
         )}
       </div>
