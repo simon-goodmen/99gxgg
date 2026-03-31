@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import './Profile.css';
 
-const API = 'http://localhost:5000/api';
+const API = 'https://99.99gxgg.com/api';
 
 const Profile = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
