@@ -34,22 +34,46 @@
 
 ## 🛠️ 本地开发 (Local Development)
 
-### 1. 克隆仓库
+### Web 预览原型开发
+
+#### 1. 克隆仓库
 ```bash
 git clone https://github.com/your-username/99-steel-structure-mp.git
+cd 99-steel-structure-mp
 ```
 
-### 2. 安装依赖
+#### 2. 安装 Web 原型依赖
 ```bash
-cd 99-steel-structure-mp/web-prototype
+cd web-prototype
 npm install
 ```
 
-### 3. 启动开发服务器
+#### 3. 启动开发服务器
 ```bash
 npm run dev
 ```
 启动后，你可以通过浏览器访问 `http://localhost:5173/profile` 查看个人中心预览页，或访问 `http://localhost:5173/steel` 查看主业务看板。
+
+### 小程序开发
+
+#### 1. 环境准备
+- 下载并安装 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
+- 注册微信小程序开发者账号
+
+#### 2. 导入项目
+- 打开微信开发者工具
+- 选择 "导入项目"
+- 项目目录选择 `miniprogram` 文件夹
+- AppID 输入你的小程序 AppID（可在微信公众平台获取）
+
+#### 3. 云开发配置（可选）
+如果使用云开发功能：
+- 在开发者工具中启用云开发
+- 配置云环境 ID（参考 `project.config.json`）
+
+#### 4. 开发调试
+- 在开发者工具中进行代码编辑和调试
+- 使用真机调试确保兼容性
 
 ## 📂 目录结构 (Directory Structure)
 

@@ -1,4 +1,5 @@
 const { request } = require('../../utils/request');
+const steelSnapshot = require('../../data/steel');
 
 Page({
   data: {
@@ -26,17 +27,12 @@ Page({
   },
 
   fetchFactories() {
-    wx.showLoading({ title: '加载中' });
-    request({ url: '/steel/factories' })
-      .then(res => {
-        wx.hideLoading();
-        this.setData({
-          factories: res,
-          currentFactory: res[0],
-          formTargetFactoryId: res[0] ? res[0].id : ''
-        });
-      })
-      .catch(() => wx.hideLoading());
+    const factories = steelSnapshot.factories || [];
+    this.setData({
+      factories,
+      currentFactory: factories[0] || null,
+      formTargetFactoryId: factories[0] ? factories[0].id : ''
+    });
   },
 
   // Factory Selection

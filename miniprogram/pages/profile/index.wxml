@@ -61,7 +61,7 @@
       </view>
       
       <button class="save-settings-btn">保存设置</button>
-      <view class="logout-link" bindtap="handleLogout">退出当前管理账号</view>
+      <view class="logout-link" bindtap="handleLogout">退出当前登录</view>
     </view>
   </view>
 
@@ -86,7 +86,7 @@
       </view>
       
       <view class="login-invitation" bindtap="handleLogin" wx:if="{{!isLoggedIn}}">
-        <text class="li-label">点击登录 / 注册账号</text>
+        <text class="li-label">填写姓名和手机号</text>
         <text class="li-action">立即开启 ▶</text>
       </view>
     </view>
@@ -176,7 +176,7 @@
             <text class="chevron">▶</text>
           </view>
         </view>
-        <view class="logout-link" bindtap="handleLogout">退出当前管理账号</view>
+        <view class="logout-link" bindtap="handleLogout">退出当前登录</view>
       </block>
       
       <block wx:else>

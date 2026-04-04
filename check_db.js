@@ -1,11 +1,7 @@
 const mysql = require('mysql2/promise');
+const { requireDbConfig } = require('./load-env');
 
-const dbConfig = {
-  host: '99.99gxgg.com',
-  user: '99app',
-  password: '<REDACTED_DB_PASSWORD>',
-  database: '99app'
-};
+const dbConfig = requireDbConfig();
 
 async function checkDb() {
   try {

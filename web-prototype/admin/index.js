@@ -12,7 +12,12 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Serve Admin UI
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/admin', express.static(__dirname));
+
+// Redirect root to admin
+app.get('/', (req, res) => {
+  res.redirect('/admin');
+});
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -199,6 +204,11 @@ app.get('/api/concrete/stations', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM concrete_stations');
     rows.forEach(r => {
       r.grades = r.grades ? r.grades.split(',') : [];
+      try {
+        r.grade_prices = r.grade_prices ? JSON.parse(r.grade_prices) : {};
+      } catch {
+        r.grade_prices = {};
+      }
       r.tags = r.tags ? r.tags.split(',') : [];
     });
     res.json(rows);
@@ -207,13 +217,57 @@ app.get('/api/concrete/stations', async (req, res) => {
   }
 });
 
+app.post('/api/leads', async (req, res) => {
+  const { source, lead_type, name, phone, message } = req.body;
+  if (!name || !phone) {
+    return res.status(400).json({ error: '姓名和手机号必填' });
+  }
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO customer_leads (source, lead_type, name, phone, message) VALUES (?,?,?,?,?)',
+      [source || 'miniprogram', lead_type || 'consultation', name, phone, message || null]
+    );
+    res.json({ success: true, id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/leads', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM customer_leads ORDER BY created_at DESC, id DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/concrete/stations/:id', async (req, res) => {
   const { id } = req.params;
-  const { status, status_color, price, weekly_quota, sold_qty, condition_text, condition_color, percentage, timeline_status } = req.body;
+  const {
+    name, status, status_color, price, weekly_quota, sold_qty,
+    condition_text, condition_color, percentage, timeline_status,
+    grades, grade_prices
+  } = req.body;
+  const gradesStr = Array.isArray(grades) ? grades.join(',') : grades;
+  const gradePricesStr = grade_prices ? JSON.stringify(grade_prices) : null;
   try {
     await pool.query(
-      'UPDATE concrete_stations SET status=?,status_color=?,price=?,weekly_quota=?,sold_qty=?,condition_text=?,condition_color=?,percentage=?,timeline_status=? WHERE id=?',
-      [status, status_color, price, weekly_quota, sold_qty, condition_text, condition_color, percentage, timeline_status, id]
+      `UPDATE concrete_stations
+       SET name = COALESCE(?, name),
+           status = COALESCE(?, status),
+           status_color = COALESCE(?, status_color),
+           price = COALESCE(?, price),
+           weekly_quota = COALESCE(?, weekly_quota),
+           sold_qty = COALESCE(?, sold_qty),
+           condition_text = COALESCE(?, condition_text),
+           condition_color = COALESCE(?, condition_color),
+           percentage = COALESCE(?, percentage),
+           timeline_status = COALESCE(?, timeline_status),
+           grades = COALESCE(?, grades),
+           grade_prices = COALESCE(?, grade_prices)
+       WHERE id=?`,
+      [name, status, status_color, price, weekly_quota, sold_qty, condition_text, condition_color, percentage, timeline_status, gradesStr, gradePricesStr, id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -310,6 +364,34 @@ app.post('/api/auth/verify-code', async (req, res) => {
       [rows] = await pool.query('SELECT * FROM app_users WHERE phone=?', [phone]);
     } else {
       await pool.query('UPDATE app_users SET last_login=NOW() WHERE id=?', [rows[0].id]);
+    }
+    res.json({ success: true, user: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/quick-login', async (req, res) => {
+  const { phone, real_name } = req.body;
+  if (!phone || !real_name) {
+    return res.status(400).json({ error: '手机号和姓名必填' });
+  }
+
+  try {
+    let [rows] = await pool.query('SELECT * FROM app_users WHERE phone=? ORDER BY id DESC LIMIT 1', [phone]);
+    if (rows.length === 0) {
+      const openid = `quick_${phone}_${Date.now()}`;
+      await pool.query(
+        'INSERT INTO app_users (openid, phone, real_name, last_login) VALUES (?, ?, ?, NOW())',
+        [openid, phone, real_name]
+      );
+      [rows] = await pool.query('SELECT * FROM app_users WHERE phone=? ORDER BY id DESC LIMIT 1', [phone]);
+    } else {
+      await pool.query(
+        'UPDATE app_users SET real_name=?, last_login=NOW() WHERE id=?',
+        [real_name, rows[0].id]
+      );
+      [rows] = await pool.query('SELECT * FROM app_users WHERE id=?', [rows[0].id]);
     }
     res.json({ success: true, user: rows[0] });
   } catch (err) {
@@ -454,13 +536,14 @@ const genOrderNo = (type) => {
 };
 
 app.get('/api/orders', async (req, res) => {
-  const { user_id, status, order_type } = req.query;
+  const { user_id, status, order_type, order_no } = req.query;
   try {
     let sql = 'SELECT * FROM orders WHERE 1=1';
     const params = [];
     if (user_id) { sql += ' AND user_id=?'; params.push(user_id); }
     if (status)  { sql += ' AND status=?';  params.push(status); }
     if (order_type) { sql += ' AND order_type=?'; params.push(order_type); }
+    if (order_no) { sql += ' AND order_no=?'; params.push(order_no); }
     sql += ' ORDER BY created_at DESC';
     const [orders] = await pool.query(sql, params);
     for (const o of orders) {
@@ -548,6 +631,145 @@ app.put('/api/orders/:id/status', async (req, res) => {
   }
 });
 
+app.put('/api/orders/:id/logistics', async (req, res) => {
+  const { logistics_company, logistics_no, driver_name, driver_phone, dispatcher_phone, vehicle_no, shipped_at } = req.body;
+  if (!logistics_company || !logistics_no) {
+    return res.status(400).json({ error: '物流公司和物流单号必填' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [[order]] = await conn.query('SELECT * FROM orders WHERE id=? FOR UPDATE', [req.params.id]);
+    if (!order) {
+      await conn.rollback();
+      return res.status(404).json({ error: '订单不存在' });
+    }
+
+    const shipTime = shipped_at || new Date();
+    await conn.query(
+      `UPDATE orders
+       SET logistics_company=?, logistics_no=?, driver_name=?, driver_phone=?, dispatcher_phone=?, vehicle_no=?, shipped_at=?, logistics_status='assigned', logistics_updated_at=?, status='delivering'
+       WHERE id=?`,
+      [logistics_company, logistics_no, driver_name || null, driver_phone || null, dispatcher_phone || null, vehicle_no || null, shipTime, shipTime, req.params.id]
+    );
+
+    const [nodes] = await conn.query(
+      'SELECT * FROM order_tracking_nodes WHERE order_id=? ORDER BY sort_order',
+      [req.params.id]
+    );
+
+    const shippingNodeIndex = nodes.findIndex(n =>
+      /发货|运输|发运|装车/.test(n.node_name || '')
+    );
+
+    if (shippingNodeIndex >= 0) {
+      for (let i = 0; i < shippingNodeIndex; i += 1) {
+        if (nodes[i].status !== 'completed') {
+          await conn.query(
+            'UPDATE order_tracking_nodes SET status=?, event_time=COALESCE(event_time, ?) WHERE id=?',
+            ['completed', shipTime, nodes[i].id]
+          );
+        }
+      }
+
+      const shippingNode = nodes[shippingNodeIndex];
+      const shippingNodeName = `${shippingNode.node_name} · ${logistics_company} / ${logistics_no}`;
+      await conn.query(
+        'UPDATE order_tracking_nodes SET node_name=?, status=?, event_time=? WHERE id=?',
+        [shippingNodeName, 'processing', shipTime, shippingNode.id]
+      );
+    }
+
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+app.put('/api/orders/:id/logistics-progress', async (req, res) => {
+  const { logistics_status, logistics_remark } = req.body;
+  const validStatuses = ['assigned', 'loaded', 'in_transit', 'arriving', 'signed', 'exception'];
+  if (!validStatuses.includes(logistics_status)) {
+    return res.status(400).json({ error: '非法物流状态' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const now = new Date();
+    const [[order]] = await conn.query('SELECT * FROM orders WHERE id=? FOR UPDATE', [req.params.id]);
+    if (!order) {
+      await conn.rollback();
+      return res.status(404).json({ error: '订单不存在' });
+    }
+
+    const orderStatus = logistics_status === 'signed' ? 'completed' : logistics_status === 'exception' ? order.status : 'delivering';
+    await conn.query(
+      'UPDATE orders SET logistics_status=?, logistics_remark=?, logistics_updated_at=?, status=? WHERE id=?',
+      [logistics_status, logistics_remark || null, now, orderStatus, req.params.id]
+    );
+
+    const [nodes] = await conn.query('SELECT * FROM order_tracking_nodes WHERE order_id=? ORDER BY sort_order', [req.params.id]);
+    const shippingNodeIndex = nodes.findIndex(n => /发货|运输|发运|装车/.test(n.node_name || ''));
+    const signNodeIndex = nodes.findIndex(n => /签收/.test(n.node_name || ''));
+
+    if (shippingNodeIndex >= 0) {
+      const shippingNode = nodes[shippingNodeIndex];
+      let shippingNodeName = shippingNode.node_name || '运输中';
+      if (order.logistics_company && order.logistics_no) {
+        shippingNodeName = `运输中/预计到场 · ${order.logistics_company} / ${order.logistics_no}`;
+      }
+
+      if (['assigned', 'loaded', 'in_transit', 'arriving', 'exception'].includes(logistics_status)) {
+        const stageLabelMap = {
+          assigned: '已派车',
+          loaded: '已装车',
+          in_transit: '运输中',
+          arriving: '即将到达',
+          exception: '运输异常'
+        };
+        await conn.query(
+          'UPDATE order_tracking_nodes SET node_name=?, status=?, event_time=? WHERE id=?',
+          [`${shippingNodeName} · ${stageLabelMap[logistics_status]}`, logistics_status === 'exception' ? 'processing' : 'processing', now, shippingNode.id]
+        );
+      }
+
+      if (logistics_status === 'signed') {
+        for (const node of nodes) {
+          await conn.query(
+            'UPDATE order_tracking_nodes SET status=?, event_time=COALESCE(event_time, ?) WHERE id=?',
+            ['completed', now, node.id]
+          );
+        }
+      } else if (signNodeIndex >= 0) {
+        for (let i = 0; i < signNodeIndex; i += 1) {
+          const node = nodes[i];
+          if (i < shippingNodeIndex && node.status !== 'completed') {
+            await conn.query(
+              'UPDATE order_tracking_nodes SET status=?, event_time=COALESCE(event_time, ?) WHERE id=?',
+              ['completed', now, node.id]
+            );
+          }
+        }
+      }
+    }
+
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
 // Update tracking node
 app.put('/api/orders/tracking/:nodeId', async (req, res) => {
   const { status, event_time } = req.body;
@@ -626,11 +848,15 @@ app.delete('/api/steel/factories/:id', async (req, res) => {
 
 // ─── Admin: Concrete CRUD ────────────────────────────────────────────────────
 app.post('/api/concrete/stations', async (req, res) => {
-  const { name, price, weekly_quota, condition_text } = req.body;
+  const { name, price, weekly_quota, condition_text, grades, grade_prices } = req.body;
+  const gradesStr = Array.isArray(grades) ? grades.join(',') : (grades || 'C15,C20,C25,C30,C35');
+  const gradePricesStr = grade_prices ? JSON.stringify(grade_prices) : null;
   try {
     const [r] = await pool.query(
-      'INSERT INTO concrete_stations (name, status, status_color, price, capacity, weekly_quota, sold_qty, condition_text, condition_color, percentage, timeline_status) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-      [name, '开放预购', 'green', price||0, weekly_quota||0, weekly_quota||0, 0, condition_text||'正常供应', 'green', 0, 'active']
+      `INSERT INTO concrete_stations
+       (name, status, status_color, price, capacity, weekly_quota, sold_qty, grades, grade_prices, condition_text, condition_color, percentage, timeline_status)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [name, '开放预购', 'green', price||0, weekly_quota||0, weekly_quota||0, 0, gradesStr, gradePricesStr, condition_text||'正常供应', 'green', 0, 'active']
     );
     res.json({ success: true, id: r.insertId });
   } catch (err) {

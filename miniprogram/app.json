@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/contact/index",
     "pages/steel/index",
     "pages/concrete/index",
     "pages/materials/index",

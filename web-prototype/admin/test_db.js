@@ -1,10 +1,7 @@
 const mysql = require('mysql2/promise');
-const dbConfig = {
-  host: '99.99gxgg.com',
-  user: '99app',
-  password: '<REDACTED_DB_PASSWORD>',
-  database: '99app'
-};
+const { requireDbConfig } = require('../../load-env');
+
+const dbConfig = requireDbConfig();
 
 mysql.createConnection(dbConfig).then(conn => {
   console.log('Connected to MySQL successfully.');

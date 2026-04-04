@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import './Profile.css';
 
-const API = 'https://99.99gxgg.com/api';
+const API = 'http://localhost:5001/api';
+const PROFILE_EDIT_LINK = `${window.location.origin}/profile?edit=1`;
 
 const Profile = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -25,8 +26,7 @@ const Profile = () => {
 
   // Login form
   const [loginPhone, setLoginPhone] = useState('');
-  const [loginCode, setLoginCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
+  const [loginName, setLoginName] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
   // 发布需求表单
@@ -57,6 +57,17 @@ const Profile = () => {
       setIsLoggedIn(true);
       if (storedUserInfo) {
         setUserInfo(JSON.parse(storedUserInfo));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('edit') === '1') {
+      if (localStorage.getItem('userId')) {
+        setShowSettings(true);
+      } else {
+        setShowLoginModal(true);
       }
     }
   }, []);
@@ -124,52 +135,42 @@ const Profile = () => {
     }
   };
 
-  const handleSendCode = async () => {
+  const handleQuickLogin = async () => {
     if (!loginPhone || loginPhone.length !== 11) {
       alert('请输入正确的11位手机号');
       return;
     }
-    try {
-      const res = await fetch(`${API}/auth/send-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: loginPhone })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCodeSent(true);
-        alert('验证码已发送 (开发模式: 1234)');
-      } else {
-        alert(data.error || '发送失败');
-      }
-    } catch (err) {
-      alert('网络错误');
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!loginCode) {
-      alert('请输入验证码');
+    if (!loginName.trim()) {
+      alert('请输入姓名');
       return;
     }
     setLoginLoading(true);
     try {
-      const res = await fetch(`${API}/auth/verify-code`, {
+      const res = await fetch(`${API}/auth/quick-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: loginPhone, code: loginCode })
+        body: JSON.stringify({ phone: loginPhone, real_name: loginName.trim() })
       });
       const data = await res.json();
       if (data.success) {
         setUserId(data.user.id);
         setIsLoggedIn(true);
+        const nextUserInfo = {
+          name: data.user.real_name || loginName.trim(),
+          phone: data.user.phone || loginPhone,
+          email: ''
+        };
+        setUserInfo(nextUserInfo);
         localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userInfo', JSON.stringify(nextUserInfo));
         setShowLoginModal(false);
         setLoginPhone('');
-        setLoginCode('');
-        setCodeSent(false);
+        setLoginName('');
+        if (new URLSearchParams(window.location.search).get('edit') === '1') {
+          setShowSettings(true);
+        }
       } else {
-        alert(data.error || '验证失败');
+        alert(data.error || '登录失败');
       }
     } catch (err) {
       alert('网络错误');
@@ -187,6 +188,9 @@ const Profile = () => {
     localStorage.removeItem('userId');
     localStorage.removeItem('userInfo');
     setShowSettings(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('edit');
+    window.history.replaceState({}, '', url.pathname + url.search);
   };
 
   const handlePublish = () => {
@@ -309,10 +313,6 @@ const Profile = () => {
                 <label>手机号</label>
                 <input value={userInfo.phone} onChange={e => setUserInfo({...userInfo, phone: e.target.value})} />
               </div>
-              <div className="settings-field">
-                <label>邮箱</label>
-                <input value={userInfo.email} onChange={e => setUserInfo({...userInfo, email: e.target.value})} />
-              </div>
             </div>
           </div>
 
@@ -411,8 +411,12 @@ const Profile = () => {
           <button className="settings-save-btn" onClick={handleSaveSettings}>
             <Save size={16} /> 保存设置
           </button>
+          <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '12px' }}>
+            资料修改链接：
+            <a href={PROFILE_EDIT_LINK} style={{ color: '#FF6F00', marginLeft: '6px' }}>{PROFILE_EDIT_LINK}</a>
+          </div>
           <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.4</div>
-          <div className="logout-action" onClick={handleLogout}>退出当前管理账号</div>
+          <div className="logout-action" onClick={handleLogout}>退出当前登录</div>
         </div>
       </div>
     );
@@ -441,7 +445,7 @@ const Profile = () => {
               ) : (
                 <div className="user-name-row">
                   <h2>准采购经理</h2>
-                </div v>
+                </div>
               )}
             </div>
           </div>
@@ -456,7 +460,7 @@ const Profile = () => {
           <div className="login-invitation" onClick={() => setShowLoginModal(true)}>
             <div className="li-left">
               <LogIn className="li-icon" size={20} />
-              <span className="li-label">点击登录 / 注册账号</span>
+              <span className="li-label">填写姓名和手机号</span>
             </div>
             <div className="li-action">
               立即开启 <ChevronRight size={14} />
@@ -591,8 +595,13 @@ const Profile = () => {
               </div>
             </div>
 
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <a href={PROFILE_EDIT_LINK} style={{ color: '#FF6F00', fontSize: '13px', fontWeight: 700 }}>
+                修改个人资料
+              </a>
+            </div>
             <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '20px' }}>版本号: v1.1.4</div>
-            <div className="logout-action" onClick={handleLogout}>退出当前管理账号</div>
+            <div className="logout-action" onClick={handleLogout}>退出当前登录</div>
           </>
         ) : (
           <div className="guest-content-lock">
@@ -609,10 +618,19 @@ const Profile = () => {
         <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
           <div className="publish-modal" onClick={e => e.stopPropagation()}>
             <div className="pm-header">
-              <h3>手机号登录</h3>
+              <h3>快速登记</h3>
               <button className="pm-close" onClick={() => setShowLoginModal(false)}><X size={20} /></button>
             </div>
             <div className="pm-body">
+              <div className="pm-field">
+                <label>姓名</label>
+                <input
+                  type="text"
+                  placeholder="请输入姓名"
+                  value={loginName}
+                  onChange={e => setLoginName(e.target.value)}
+                />
+              </div>
               <div className="pm-field">
                 <label>手机号</label>
                 <input
@@ -623,29 +641,12 @@ const Profile = () => {
                   onChange={e => setLoginPhone(e.target.value)}
                 />
               </div>
-              {codeSent && (
-                <div className="pm-field">
-                  <label>验证码 (开发模式: 1234)</label>
-                  <input
-                    type="text"
-                    placeholder="请输入验证码"
-                    value={loginCode}
-                    onChange={e => setLoginCode(e.target.value)}
-                  />
-                </div>
-              )}
             </div>
             <div className="pm-footer">
-              {!codeSent ? (
-                <button className="pm-submit-btn" onClick={handleSendCode}>
-                  获取验证码
-                </button>
-              ) : (
-                <button className="pm-submit-btn" onClick={handleVerifyCode} disabled={loginLoading}>
-                  {loginLoading ? '登录中...' : '登录'}
-                </button>
-              )}
-              <p className="pm-footer-hint">未注册手机号将自动创建账号</p>
+              <button className="pm-submit-btn" onClick={handleQuickLogin} disabled={loginLoading}>
+                {loginLoading ? '登录中...' : '进入我的页面'}
+              </button>
+              <p className="pm-footer-hint">只填手机号和姓名即可下单，不需要密码，也不需要验证码</p>
             </div>
           </div>
         </div>

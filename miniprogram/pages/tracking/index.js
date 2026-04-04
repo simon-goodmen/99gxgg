@@ -5,7 +5,7 @@ Page({
     tabs: [
       { id: 'steel', label: '共享钢构', icon: '🏗️' },
       { id: 'concrete', label: '共享商砼', icon: '🚛' },
-      { id: 'materials', label: '共享物资', icon: '📦' }
+      { id: 'materials', label: '共享建材', icon: '📦' }
     ],
     expandedOrderId: 'O-1024-001',
     orders: {

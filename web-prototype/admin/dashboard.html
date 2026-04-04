@@ -23,42 +23,8 @@
     }
     html,body{height:100%;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 
-    /* ── Login ── */
-    #login-screen{
-      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-      background:radial-gradient(ellipse at 30% 40%,#1a0e00 0%,#0d0d17 60%);
-      z-index:999;
-    }
-    .login-box{
-      background:var(--surface);border:1px solid var(--border);border-radius:16px;
-      padding:40px 36px;width:360px;box-shadow:0 24px 64px rgba(0,0,0,.6);
-    }
-    .login-logo{text-align:center;margin-bottom:32px}
-    .login-logo .badge-tag{
-      display:inline-block;background:var(--primary);color:#fff;
-      font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:1px;margin-bottom:12px;
-    }
-    .login-logo h2{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px}
-    .login-logo p{font-size:12px;color:var(--text-muted)}
-    .login-field{margin-bottom:16px}
-    .login-field label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
-    .login-field input{
-      width:100%;background:var(--bg);border:1px solid var(--border);
-      border-radius:8px;color:var(--text);padding:11px 14px;font-size:14px;
-      transition:border-color .2s;
-    }
-    .login-field input:focus{outline:none;border-color:var(--primary)}
-    .login-btn{
-      width:100%;background:var(--primary);color:#fff;border:none;
-      border-radius:8px;padding:13px;font-size:15px;font-weight:700;
-      cursor:pointer;margin-top:8px;transition:opacity .2s;
-    }
-    .login-btn:hover{opacity:.9}
-    .login-err{color:#e57373;font-size:12px;text-align:center;margin-top:10px;min-height:18px}
-
     /* ── App Shell ── */
-    #app{display:none;height:100vh;overflow:hidden}
-    #app.visible{display:flex}
+    #app{display:flex;height:100vh;overflow:hidden}
 
     /* ── Sidebar ── */
     .sidebar{
@@ -235,27 +201,6 @@
 </head>
 <body>
 
-<!-- ══ LOGIN SCREEN ══════════════════════════════════════════════════════ -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="badge-tag">ADMIN</div>
-      <h2>99共享建材</h2>
-      <p>数据管理后台 · 仅限授权人员</p>
-    </div>
-    <div class="login-field">
-      <label>账号</label>
-      <input id="login-user" type="text" placeholder="请输入管理账号" value="admin">
-    </div>
-    <div class="login-field">
-      <label>密码</label>
-      <input id="login-pass" type="password" placeholder="请输入密码" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <button class="login-btn" onclick="doLogin()">登 录</button>
-    <div class="login-err" id="login-err"></div>
-  </div>
-</div>
-
 <!-- ══ APP SHELL ════════════════════════════════════════════════════════ -->
 <div id="app">
 
@@ -284,6 +229,9 @@
     <div class="nav-section-title">订单管理</div>
     <div class="nav-item" onclick="switchPage('orders',this)">
       <span class="icon">📋</span> 订单列表
+    </div>
+    <div class="nav-item" onclick="switchPage('leads',this)">
+      <span class="icon">💬</span> 咨询线索
     </div>
     <div class="nav-item" onclick="switchPage('tracking',this)">
       <span class="icon">📍</span> 物流追踪
@@ -390,8 +338,8 @@
   <div class="card">
     <div class="card-title">商砼搅拌站列表</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>ID</th><th>站点名称</th><th>状态</th><th>单价(元/m³)</th><th>周配额</th><th>已售</th><th>操作</th></tr></thead>
-      <tbody id="concrete-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text-muted)">加载中...</td></tr></tbody>
+      <thead><tr><th>ID</th><th>站点名称</th><th>状态</th><th>销售标号</th><th>标号价格</th><th>周配额</th><th>已售</th><th>操作</th></tr></thead>
+      <tbody id="concrete-table-body"><tr><td colspan="8" style="text-align:center;color:var(--text-muted)">加载中...</td></tr></tbody>
     </table></div>
   </div>
 </div>
@@ -447,7 +395,22 @@
       <input placeholder="输入订单号查询..." id="track-order-input">
       <button class="btn btn-primary" onclick="loadTracking()">查询</button>
     </div>
+    <div class="table-wrap" style="margin-bottom:16px"><table>
+      <thead><tr><th>订单号</th><th>类型</th><th>物流公司</th><th>物流单号</th><th>司机/车牌</th><th>状态</th><th>发货时间</th><th>操作</th></tr></thead>
+      <tbody id="tracking-list-body"><tr><td colspan="8" style="text-align:center;color:var(--text-muted)">加载中...</td></tr></tbody>
+    </table></div>
     <div id="tracking-result"><div style="color:var(--text-muted);text-align:center;padding:30px">输入订单号查询物流节点</div></div>
+  </div>
+</div>
+
+<!-- ══ LEADS ══ -->
+<div class="page-section" id="page-leads">
+  <div class="card">
+    <div class="card-title">咨询线索列表</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>来源</th><th>类型</th><th>姓名</th><th>手机号</th><th>需求说明</th><th>提交时间</th></tr></thead>
+      <tbody id="leads-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text-muted)">加载中...</td></tr></tbody>
+    </table></div>
   </div>
 </div>
 
@@ -510,13 +473,54 @@
     <h3>新增商砼搅拌站</h3>
     <div class="field-group"><label>站点名称</label><input id="cf-name" placeholder="搅拌站名称"></div>
     <div class="form-row">
-      <div class="field-group"><label>基础单价(元/m³)</label><input id="cf-price" type="number" placeholder="420"></div>
+      <div class="field-group"><label>C30基础价(元/m³)</label><input id="cf-price" type="number" placeholder="220"></div>
       <div class="field-group"><label>周配额(m³)</label><input id="cf-quota" type="number" placeholder="2000"></div>
     </div>
-    <div class="field-group"><label>状态描述</label><input id="cf-condition" placeholder="正常供应"></div>
+    <div class="field-group"><label>销售标号</label><input id="cf-grades" placeholder="C15,C20,C25,C30,C35"></div>
+    <div class="form-row">
+      <div class="field-group"><label>C15价格</label><input id="cf-p15" type="number" placeholder="190"></div>
+      <div class="field-group"><label>C20价格</label><input id="cf-p20" type="number" placeholder="200"></div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>C25价格</label><input id="cf-p25" type="number" placeholder="210"></div>
+      <div class="field-group"><label>C30价格</label><input id="cf-p30" type="number" placeholder="220"></div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>C35价格</label><input id="cf-p35" type="number" placeholder="235"></div>
+      <div class="field-group"><label>状态描述</label><input id="cf-condition" placeholder="正常供应"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-concrete-add')">取消</button>
       <button class="btn btn-primary" onclick="submitConcrete()">确认新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-concrete-edit">
+  <div class="modal-box">
+    <h3>编辑商砼站销售标号与价格</h3>
+    <input id="cef-id" type="hidden">
+    <div class="field-group"><label>站点名称</label><input id="cef-name" placeholder="搅拌站名称"></div>
+    <div class="form-row">
+      <div class="field-group"><label>C30基础价(元/m³)</label><input id="cef-price" type="number" placeholder="220"></div>
+      <div class="field-group"><label>周配额(m³)</label><input id="cef-quota" type="number" placeholder="2000"></div>
+    </div>
+    <div class="field-group"><label>销售标号</label><input id="cef-grades" placeholder="C15,C20,C25,C30,C35"></div>
+    <div class="form-row">
+      <div class="field-group"><label>C15价格</label><input id="cef-p15" type="number"></div>
+      <div class="field-group"><label>C20价格</label><input id="cef-p20" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>C25价格</label><input id="cef-p25" type="number"></div>
+      <div class="field-group"><label>C30价格</label><input id="cef-p30" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>C35价格</label><input id="cef-p35" type="number"></div>
+      <div class="field-group"><label>状态描述</label><input id="cef-condition" placeholder="正常供应"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-concrete-edit')">取消</button>
+      <button class="btn btn-primary" onclick="submitConcreteEdit()">保存修改</button>
     </div>
   </div>
 </div>
@@ -554,8 +558,44 @@
   <div class="modal-box">
     <h3>订单详情</h3>
     <div id="order-detail-content"></div>
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;text-transform:uppercase">发物流</div>
+      <input id="lg-order-id" type="hidden">
+      <div class="form-row">
+        <div class="field-group"><label>物流公司 *</label><input id="lg-company" placeholder="例：99同城物流"></div>
+        <div class="field-group"><label>物流单号 *</label><input id="lg-no" placeholder="例：WL20260404001"></div>
+      </div>
+      <div class="form-row">
+        <div class="field-group"><label>司机姓名</label><input id="lg-driver" placeholder="司机姓名"></div>
+        <div class="field-group"><label>司机电话</label><input id="lg-driver-phone" placeholder="司机电话"></div>
+      </div>
+      <div class="form-row">
+        <div class="field-group"><label>调度电话</label><input id="lg-dispatcher-phone" placeholder="调度联系电话"></div>
+        <div class="field-group"><label>车牌号</label><input id="lg-vehicle" placeholder="例：豫A12345"></div>
+      </div>
+      <div class="form-row">
+        <div class="field-group"><label>发货时间</label><input id="lg-shipped-at" type="datetime-local"></div>
+        <div class="field-group"><label>物流阶段</label>
+          <select id="lg-progress">
+            <option value="assigned">已派车</option>
+            <option value="loaded">已装车</option>
+            <option value="in_transit">运输中</option>
+            <option value="arriving">即将到达</option>
+            <option value="signed">已签收</option>
+            <option value="exception">异常</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group"><label>调度备注</label><textarea id="lg-remark" placeholder="例：司机已出发，预计40分钟到场"></textarea></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a id="lg-driver-call" class="btn btn-outline btn-sm" href="javascript:void(0)">拨打司机</a>
+        <a id="lg-dispatcher-call" class="btn btn-outline btn-sm" href="javascript:void(0)">拨打调度</a>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-order-detail')">关闭</button>
+      <button class="btn btn-primary" id="btn-order-logistics" onclick="shipOrder()">发物流</button>
+      <button class="btn btn-outline" id="btn-order-progress" onclick="updateLogisticsProgress()">更新进度</button>
       <button class="btn btn-success" id="btn-order-complete" onclick="completeOrder()">标记完成</button>
     </div>
   </div>
@@ -564,51 +604,22 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'http://localhost:5000/api';
+const API = `${window.location.origin}/api`;
 let currentOrderId = null;
-
-// ── Auth ──
-function doLogin() {
-  const u = document.getElementById('login-user').value.trim();
-  const p = document.getElementById('login-pass').value;
-  const err = document.getElementById('login-err');
-  if (!u || !p) { err.textContent = '请输入账号密码'; return; }
-  
-  fetch(API + '/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: u, password: p })
-  })
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app').classList.add('visible');
-        document.getElementById('user-avatar-init').textContent = res.user.username[0].toUpperCase();
-        document.getElementById('user-display-name').textContent = res.user.username;
-        initDashboard();
-      } else {
-        err.textContent = res.message || '账号或密码错误';
-      }
-    })
-    .catch(() => err.textContent = '服务器连接失败');
-}
 function doLogout() {
-  document.getElementById('app').classList.remove('visible');
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login-pass').value = '';
+  window.location.reload();
 }
 
 // ── Navigation ──
 const PAGE_TITLES = {
   home:'首页概览', steel:'共享钢构', concrete:'共享商砼',
-  materials:'共享物资', orders:'订单列表', tracking:'物流追踪',
+  materials:'共享物资', orders:'订单列表', leads:'咨询线索', tracking:'物流追踪',
   users:'用户管理', settings:'系统设置'
 };
 const PAGE_SUBS = {
   home:'数据总览与快捷配置', steel:'钢构工厂管理',
   concrete:'商砼搅拌站管理', materials:'物资产品管理',
-  orders:'全平台订单管理', tracking:'物流节点查询',
+  orders:'全平台订单管理', leads:'客户咨询与回访线索', tracking:'物流节点查询',
   users:'注册用户管理', settings:'平台参数配置'
 };
 function switchPage(name, el) {
@@ -619,7 +630,7 @@ function switchPage(name, el) {
   if (el) el.classList.add('active');
   document.getElementById('topbar-title').textContent = PAGE_TITLES[name] || name;
   document.getElementById('topbar-sub').textContent = PAGE_SUBS[name] || '';
-  const loaders = { steel: loadSteel, concrete: loadConcrete, materials: loadMaterials, orders: loadOrders, users: loadUsers };
+  const loaders = { steel: loadSteel, concrete: loadConcrete, materials: loadMaterials, orders: loadOrders, leads: loadLeads, tracking: loadTrackingList, users: loadUsers };
   if (loaders[name]) loaders[name]();
 }
 
@@ -648,15 +659,18 @@ updateTime();
 
 // ── Init ──
 function initDashboard() {
+  document.getElementById('user-avatar-init').textContent = 'A';
+  document.getElementById('user-display-name').textContent = 'Admin';
   loadHomeStats();
   loadHomeOrders();
   loadConfig();
+  checkApiStatus();
 }
 function refreshData() {
   const active = document.querySelector('.page-section.active');
   if (active) {
     const id = active.id.replace('page-','');
-    const loaders = { home: () => { loadHomeStats(); loadHomeOrders(); }, steel: loadSteel, concrete: loadConcrete, materials: loadMaterials, orders: loadOrders, users: loadUsers };
+    const loaders = { home: () => { loadHomeStats(); loadHomeOrders(); }, steel: loadSteel, concrete: loadConcrete, materials: loadMaterials, orders: loadOrders, leads: loadLeads, tracking: loadTrackingList, users: loadUsers };
     if (loaders[id]) loaders[id]();
   }
   toast('数据已刷新');
@@ -732,6 +746,29 @@ function deleteSteel(id) {
 }
 
 // ── Concrete ──
+function getConcreteGradePrices(prefix) {
+  const read = (suffix) => {
+    const value = document.getElementById(prefix + suffix).value;
+    return value === '' ? null : Number(value);
+  };
+  return {
+    C15: read('p15'),
+    C20: read('p20'),
+    C25: read('p25'),
+    C30: read('p30'),
+    C35: read('p35')
+  };
+}
+function normalizeConcreteGradePrices(prices) {
+  return Object.fromEntries(Object.entries(prices).filter(([, value]) => value !== null && !Number.isNaN(value)));
+}
+function renderConcretePriceMap(priceMap) {
+  const gradeOrder = ['C15', 'C20', 'C25', 'C30', 'C35'];
+  return gradeOrder
+    .filter(grade => priceMap && priceMap[grade] != null)
+    .map(grade => `<div style="white-space:nowrap">${grade}: ¥${priceMap[grade]}</div>`)
+    .join('');
+}
 function loadConcrete() {
   const q = (document.getElementById('concrete-search')||{}).value||'';
   fetch(API + '/concrete/stations').then(r => r.json()).then(data => {
@@ -741,19 +778,61 @@ function loadConcrete() {
       <td>${s.id}</td>
       <td><strong>${s.name}</strong></td>
       <td><span class="badge badge-green">${s.status||'开放'}</span></td>
-      <td>¥${s.price||'-'}</td>
+      <td>${(s.grades || []).join(' / ') || '-'}</td>
+      <td>${renderConcretePriceMap(s.grade_prices || {}) || ('C30: ¥' + (s.price || '-'))}</td>
       <td>${s.weekly_quota||'-'}</td>
       <td>${s.sold_qty||0}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteConcrete(${s.id})">删除</button></td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">暂无数据</td></tr>';
+      <td>
+        <button class="btn btn-outline btn-sm" onclick='openConcreteEdit(${JSON.stringify(JSON.stringify(s))})'>编辑</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteConcrete(${s.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">暂无数据</td></tr>';
   }).catch(() => {
-    document.getElementById('concrete-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">加载失败</td></tr>';
+    document.getElementById('concrete-table-body').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">加载失败</td></tr>';
   });
 }
 function submitConcrete() {
-  const body = { name: document.getElementById('cf-name').value, price: +document.getElementById('cf-price').value, weekly_quota: +document.getElementById('cf-quota').value, condition_text: document.getElementById('cf-condition').value };
+  const gradePrices = normalizeConcreteGradePrices(getConcreteGradePrices('cf-'));
+  const body = {
+    name: document.getElementById('cf-name').value,
+    price: Number(document.getElementById('cf-price').value || gradePrices.C30 || 0),
+    weekly_quota: Number(document.getElementById('cf-quota').value || 0),
+    condition_text: document.getElementById('cf-condition').value,
+    grades: (document.getElementById('cf-grades').value || Object.keys(gradePrices).join(',')).split(',').map(s => s.trim()).filter(Boolean),
+    grade_prices: gradePrices
+  };
   fetch(API + '/concrete/stations', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r => r.json()).then(() => { closeModal('modal-concrete-add'); loadConcrete(); toast('搅拌站新增成功'); }).catch(() => toast('新增失败'));
+}
+function openConcreteEdit(serializedStation) {
+  const s = JSON.parse(serializedStation);
+  document.getElementById('cef-id').value = s.id;
+  document.getElementById('cef-name').value = s.name || '';
+  document.getElementById('cef-price').value = s.price || '';
+  document.getElementById('cef-quota').value = s.weekly_quota || '';
+  document.getElementById('cef-grades').value = (s.grades || []).join(',');
+  document.getElementById('cef-condition').value = s.condition_text || '';
+  const prices = s.grade_prices || {};
+  document.getElementById('cef-p15').value = prices.C15 ?? '';
+  document.getElementById('cef-p20').value = prices.C20 ?? '';
+  document.getElementById('cef-p25').value = prices.C25 ?? '';
+  document.getElementById('cef-p30').value = prices.C30 ?? s.price ?? '';
+  document.getElementById('cef-p35').value = prices.C35 ?? '';
+  openModal('modal-concrete-edit');
+}
+function submitConcreteEdit() {
+  const id = document.getElementById('cef-id').value;
+  const gradePrices = normalizeConcreteGradePrices(getConcreteGradePrices('cef-'));
+  const body = {
+    name: document.getElementById('cef-name').value,
+    price: Number(document.getElementById('cef-price').value || gradePrices.C30 || 0),
+    weekly_quota: Number(document.getElementById('cef-quota').value || 0),
+    condition_text: document.getElementById('cef-condition').value,
+    grades: (document.getElementById('cef-grades').value || Object.keys(gradePrices).join(',')).split(',').map(s => s.trim()).filter(Boolean),
+    grade_prices: gradePrices
+  };
+  fetch(API + '/concrete/stations/' + id, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r => r.json()).then(() => { closeModal('modal-concrete-edit'); loadConcrete(); toast('搅拌站价格已更新'); }).catch(() => toast('保存失败'));
 }
 function deleteConcrete(id) {
   if (!confirm('确认删除该搅拌站？')) return;
@@ -798,8 +877,9 @@ function deleteMaterial(id) {
 
 // ── Orders ──
 const TYPE_L = {steel:'钢构',concrete:'商砼',materials:'物资'};
-const STAT_L = {pending:'待处理',delivering:'配送中',completed:'已完成'};
+const STAT_L = {pending:'待处理',delivering:'配送中',completed:'已完成', confirmed:'已确认', cancelled:'已取消'};
 const STAT_B = {pending:'badge-orange',delivering:'badge-blue',completed:'badge-green'};
+const LOGISTICS_L = { assigned:'已派车', loaded:'已装车', in_transit:'运输中', arriving:'即将到达', signed:'已签收', exception:'异常' };
 function loadOrders() {
   const type = (document.getElementById('order-type-filter')||{}).value||'';
   const status = (document.getElementById('order-status-filter')||{}).value||'';
@@ -849,6 +929,8 @@ function viewOrder(id) {
         <div><label style="color:var(--text-muted);font-size:11px">订单总计</label><div style="font-size:16px;font-weight:700;color:var(--primary)">¥${parseFloat(o.total_amount||0).toFixed(2)}</div></div>
         <div style="grid-column:1/-1"><label style="color:var(--text-muted);font-size:11px">收货地址</label><div style="font-size:13px">${o.delivery_address||'-'}</div></div>
         <div style="grid-column:1/-1"><label style="color:var(--text-muted);font-size:11px">订单备注</label><div style="font-size:12px;color:var(--text-muted)">${o.remark||'无'}</div></div>
+        <div style="grid-column:1/-1"><label style="color:var(--text-muted);font-size:11px">物流信息</label><div style="font-size:12px;color:var(--text-muted)">${o.logistics_company ? `${o.logistics_company} / ${o.logistics_no}${o.driver_name ? ` / 司机 ${o.driver_name}` : ''}${o.vehicle_no ? ` / ${o.vehicle_no}` : ''}` : '暂未发物流'}</div></div>
+        <div style="grid-column:1/-1"><label style="color:var(--text-muted);font-size:11px">物流进度</label><div style="font-size:12px;color:var(--text-muted)">${LOGISTICS_L[o.logistics_status] || '未更新'}${o.logistics_remark ? ` / ${o.logistics_remark}` : ''}</div></div>
       </div>
       <div style="font-weight:700;font-size:12px;margin-bottom:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">订单项明细</div>
       <div style="margin-bottom:20px">${itemsHtml || '<div style="color:var(--text-muted);text-align:center">无商品项</div>'}</div>
@@ -859,8 +941,69 @@ function viewOrder(id) {
     if (o.status === 'completed' || o.status === 'cancelled') btnComp.style.display = 'none';
     else btnComp.style.display = 'block';
 
+    document.getElementById('lg-order-id').value = o.id;
+    document.getElementById('lg-company').value = o.logistics_company || '';
+    document.getElementById('lg-no').value = o.logistics_no || '';
+    document.getElementById('lg-driver').value = o.driver_name || '';
+    document.getElementById('lg-driver-phone').value = o.driver_phone || '';
+    document.getElementById('lg-dispatcher-phone').value = o.dispatcher_phone || '';
+    document.getElementById('lg-vehicle').value = o.vehicle_no || '';
+    document.getElementById('lg-shipped-at').value = o.shipped_at ? String(o.shipped_at).slice(0,16) : '';
+    document.getElementById('lg-progress').value = o.logistics_status || 'assigned';
+    document.getElementById('lg-remark').value = o.logistics_remark || '';
+    document.getElementById('lg-driver-call').href = o.driver_phone ? `tel:${o.driver_phone}` : 'javascript:void(0)';
+    document.getElementById('lg-dispatcher-call').href = o.dispatcher_phone ? `tel:${o.dispatcher_phone}` : 'javascript:void(0)';
+    document.getElementById('btn-order-logistics').textContent = o.logistics_no ? '更新物流' : '发物流';
+
     openModal('modal-order-detail');
   });
+}
+function shipOrder() {
+  const orderId = document.getElementById('lg-order-id').value || currentOrderId;
+  const body = {
+    logistics_company: document.getElementById('lg-company').value,
+    logistics_no: document.getElementById('lg-no').value,
+    driver_name: document.getElementById('lg-driver').value,
+    driver_phone: document.getElementById('lg-driver-phone').value,
+    dispatcher_phone: document.getElementById('lg-dispatcher-phone').value,
+    vehicle_no: document.getElementById('lg-vehicle').value,
+    shipped_at: document.getElementById('lg-shipped-at').value || null
+  };
+  fetch(API + '/orders/' + orderId + '/logistics', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (!res.success) throw new Error(res.error || '发物流失败');
+      toast('物流已下发');
+      viewOrder(orderId);
+      loadOrders();
+      loadTrackingList();
+    })
+    .catch(() => toast('物流保存失败'));
+}
+function updateLogisticsProgress() {
+  const orderId = document.getElementById('lg-order-id').value || currentOrderId;
+  const body = {
+    logistics_status: document.getElementById('lg-progress').value,
+    logistics_remark: document.getElementById('lg-remark').value
+  };
+  fetch(API + '/orders/' + orderId + '/logistics-progress', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (!res.success) throw new Error(res.error || '更新失败');
+      toast('物流进度已更新');
+      viewOrder(orderId);
+      loadOrders();
+      loadTrackingList();
+    })
+    .catch(() => toast('物流进度更新失败'));
 }
 function completeOrder() {
   if (!currentOrderId) return;
@@ -870,6 +1013,28 @@ function completeOrder() {
 }
 
 // ── Tracking ──
+function loadTrackingList() {
+  fetch(API + '/orders').then(r => r.json()).then(data => {
+    const shipped = data.filter(o => o.logistics_no || o.status === 'delivering' || o.status === 'completed');
+    const tbody = document.getElementById('tracking-list-body');
+    tbody.innerHTML = shipped.map(o => `<tr>
+      <td style="font-family:monospace;color:var(--primary)">${o.order_no}</td>
+      <td>${TYPE_L[o.order_type] || o.order_type}</td>
+      <td>${o.logistics_company || '-'}</td>
+      <td>${o.logistics_no || '-'}</td>
+      <td>${o.driver_name || '-'}${o.vehicle_no ? ` / ${o.vehicle_no}` : ''}</td>
+      <td><span class="badge ${o.logistics_status === 'exception' ? 'badge-red' : STAT_B[o.status] || 'badge-grey'}">${LOGISTICS_L[o.logistics_status] || STAT_L[o.status] || o.status}</span></td>
+      <td>${o.shipped_at ? String(o.shipped_at).slice(0,16).replace('T',' ') : '-'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="showTrackingOrder('${o.order_no}')">查看</button></td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">暂无已发物流订单</td></tr>';
+  }).catch(() => {
+    document.getElementById('tracking-list-body').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">加载失败</td></tr>';
+  });
+}
+function showTrackingOrder(orderNo) {
+  document.getElementById('track-order-input').value = orderNo;
+  loadTracking();
+}
 function loadTracking() {
   const no = document.getElementById('track-order-input').value.trim();
   if (!no) { toast('请输入订单号'); return; }
@@ -881,11 +1046,35 @@ function loadTracking() {
       const DOT = {completed:'var(--green)',processing:'var(--orange)',pending:'#444'};
       document.getElementById('tracking-result').innerHTML = `
         <div style="margin-bottom:12px"><strong style="color:var(--primary)">${o.order_no}</strong> &nbsp; <span style="color:var(--text-muted)">${o.delivery_address||''}</span></div>
+        <div style="margin-bottom:14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px">物流单信息</div>
+          <div style="font-size:13px">${o.logistics_company ? `${o.logistics_company} / ${o.logistics_no}` : '暂未发物流'}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${o.driver_name ? `司机：${o.driver_name}` : ''}${o.driver_phone ? ` · 电话：${o.driver_phone}` : ''}${o.dispatcher_phone ? ` · 调度：${o.dispatcher_phone}` : ''}${o.vehicle_no ? ` · 车牌：${o.vehicle_no}` : ''}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">当前进度：${LOGISTICS_L[o.logistics_status] || '未更新'}${o.logistics_remark ? ` · ${o.logistics_remark}` : ''}</div>
+        </div>
         ${nodes.map(n => `<div class="node-row">
           <div class="node-dot ${n.status}" style="background:${DOT[n.status]||'#444'}"></div>
           <div><div style="font-size:13px;font-weight:600">${n.node_name}</div><div style="font-size:11px;color:var(--text-muted)">${n.event_time?(String(n.event_time).slice(0,16)):'--'}</div></div>
         </div>`).join('') || '<div style="color:var(--text-muted)">暂无追踪节点</div>'}`;
     }).catch(() => toast('查询失败'));
+}
+
+// ── Users ──
+function loadLeads() {
+  fetch(API + '/admin/leads').then(r => r.json()).then(data => {
+    const tbody = document.getElementById('leads-table-body');
+    tbody.innerHTML = data.map(item => `<tr>
+      <td>${item.id}</td>
+      <td>${item.source || '-'}</td>
+      <td>${item.lead_type || '-'}</td>
+      <td><strong>${item.name}</strong></td>
+      <td>${item.phone}</td>
+      <td style="max-width:240px;white-space:normal;color:var(--text-muted)">${item.message || '-'}</td>
+      <td>${String(item.created_at || '').slice(0,16).replace('T',' ')}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">暂无咨询线索</td></tr>';
+  }).catch(() => {
+    document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">加载失败</td></tr>';
+  });
 }
 
 // ── Users ──
@@ -971,6 +1160,8 @@ function checkApiStatus() {
     ).join('');
   });
 }
+
+initDashboard();
 
 </script>
 </body>

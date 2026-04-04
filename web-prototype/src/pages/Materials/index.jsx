@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Plus, Minus, X, CheckCircle, Trash2, MessageSquare, Clock } from 'lucide-react';
 import './Materials.css';
 
+const API = 'http://localhost:5001/api';
 const CATEGORY_NAMES = ['砂石骨料', '水泥胶凝', '砌墙材料', '钢材辅材', '防水涂料', '项目求购'];
 const mockDistance = 28;
 const freightRate = 1.2;
@@ -19,6 +20,8 @@ const Materials = () => {
   const [allProducts, setAllProducts] = useState({});
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState(CATEGORY_NAMES);
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerPhone, setBuyerPhone] = useState('');
 
   // Cart state: { [productId]: { product, qty, includeTax, includeFreight, includeUnload } }
   const [cart, setCart] = useState({});
@@ -30,7 +33,7 @@ const Materials = () => {
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/materials/products')
+    fetch(`${API}/materials/products`)
       .then(res => res.json())
       .then(data => {
         // Group by category_id (1-based index maps to CATEGORY_NAMES)
@@ -135,8 +138,14 @@ const Materials = () => {
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
-
-    const userId = localStorage.getItem('userId') || null;
+    if (!buyerName.trim()) {
+      alert('请填写姓名');
+      return;
+    }
+    if (!buyerPhone || buyerPhone.length !== 11) {
+      alert('请输入正确的11位手机号');
+      return;
+    }
 
     // Build order items from cart
     const items = cartItems.map(item => ({
@@ -148,21 +157,41 @@ const Materials = () => {
     }));
 
     try {
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const loginRes = await fetch(`${API}/auth/quick-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: buyerPhone, real_name: buyerName.trim() })
+      });
+      const loginData = await loginRes.json();
+      if (!loginData.success) {
+        alert(loginData.error || '登记失败，请稍后重试');
+        return;
+      }
+      localStorage.setItem('userId', loginData.user.id);
+      localStorage.setItem('userInfo', JSON.stringify({
+        name: loginData.user.real_name || buyerName.trim(),
+        phone: loginData.user.phone || buyerPhone,
+        email: ''
+      }));
+
+      const res = await fetch(`${API}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: userId,
+          user_id: loginData.user.id,
           order_type: 'materials',
           items: items,
           delivery_address: '待确认（拼团成功后联系确认）',
-          remark: `拼团采购，运费距离: ${mockDistance}km`
+          remark: `联系人: ${buyerName}，电话: ${buyerPhone}，拼团采购，运费距离: ${mockDistance}km`
         })
       });
       const data = await res.json();
       if (data.success) {
+        localStorage.setItem('lastOrderNo', data.order_no);
         alert(`🛒 提交采购单成功！\n订单号: ${data.order_no}\n共 ${cartItems.length} 类商品，合计 ¥${cartTotal.toFixed(2)}\n采购员将在24小时内与您对接。`);
         setCart({});
+        setBuyerName('');
+        setBuyerPhone('');
         setShowCart(false);
       } else {
         alert('提交失败: ' + (data.error || '请稍后重试'));
@@ -369,6 +398,23 @@ const Materials = () => {
             </div>
 
             <div className="cart-footer">
+              <div style={{display:'grid', gap:'10px', marginBottom:'14px'}}>
+                <input
+                  type="text"
+                  placeholder="姓名"
+                  value={buyerName}
+                  onChange={(e) => setBuyerName(e.target.value)}
+                  style={{width:'100%', padding:'12px', borderRadius:'10px', border:'1px solid #E5E7EB'}}
+                />
+                <input
+                  type="tel"
+                  placeholder="手机号"
+                  maxLength={11}
+                  value={buyerPhone}
+                  onChange={(e) => setBuyerPhone(e.target.value)}
+                  style={{width:'100%', padding:'12px', borderRadius:'10px', border:'1px solid #E5E7EB'}}
+                />
+              </div>
               <div className="cart-total-row">
                 <span>拼购预估总价 (含送卸)</span>
                 <span className="cart-total-price">¥ {cartTotal.toFixed(2)}</span>

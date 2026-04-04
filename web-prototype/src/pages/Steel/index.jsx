@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { PenTool, Scissors, Users, Calculator, BadgeDollarSign, FileCheck, CalendarClock, Zap, X, Factory, ChevronDown, MapPin } from 'lucide-react';
 import './Steel.css';
 
+const API = 'http://localhost:5001/api';
+
 const Home = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showFactoryModal, setShowFactoryModal] = useState(false);
@@ -21,7 +23,7 @@ const Home = () => {
   const [contactPhone, setContactPhone] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/steel/factories')
+    fetch(`${API}/steel/factories`)
       .then(res => res.json())
       .then(data => {
         setFactories(data);
@@ -44,8 +46,6 @@ const Home = () => {
       return;
     }
 
-    // Get user ID from localStorage if logged in
-    const userId = localStorage.getItem('userId') || null;
     const tgtFactoryName = factories.find(f => f.id === formTargetFactoryId)?.name;
 
     // Build order items
@@ -63,11 +63,28 @@ const Home = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const loginRes = await fetch(`${API}/auth/quick-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: contactPhone, real_name: contactName.trim() })
+      });
+      const loginData = await loginRes.json();
+      if (!loginData.success) {
+        alert(loginData.error || '登记失败，请稍后重试');
+        return;
+      }
+      localStorage.setItem('userId', loginData.user.id);
+      localStorage.setItem('userInfo', JSON.stringify({
+        name: loginData.user.real_name || contactName.trim(),
+        phone: loginData.user.phone || contactPhone,
+        email: ''
+      }));
+
+      const res = await fetch(`${API}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: userId,
+          user_id: loginData.user.id,
           order_type: 'steel',
           items: items,
           delivery_address: `工厂: ${tgtFactoryName}`,
@@ -76,6 +93,7 @@ const Home = () => {
       });
       const data = await res.json();
       if (data.success) {
+        localStorage.setItem('lastOrderNo', data.order_no);
         alert(`提交成功！\n订单号: ${data.order_no}\n已锁定【${tgtFactoryName}】排产档期，业务经理五分钟内联系您。`);
         setShowBookingModal(false);
         // Clear form

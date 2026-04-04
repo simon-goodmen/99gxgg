@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { path: '/home',      label: '首页',     icon: Home },
   { path: '/steel',     label: '共享钢构', icon: Factory },
   { path: '/concrete',  label: '共享商砼', icon: Truck },
-  { path: '/materials', label: '共享物资', icon: Package },
+  { path: '/materials', label: '共享建材', icon: Package },
   { path: '/tracking',  label: '订单追踪', icon: Activity },
   { path: '/profile',   label: '我的',     icon: UserCircle },
 ];
@@ -15,7 +15,7 @@ const PAGE_TITLES = {
   '/home':      { title: '99共享建材',  sub: '郑州建材共享平台' },
   '/steel':     { title: '共享钢构',   sub: '99钢结构共享工厂' },
   '/concrete':  { title: '郑州商砼拼单', sub: '本周额度实时更新' },
-  '/materials': { title: '共享物资',   sub: '组团采购，现金拼价' },
+  '/materials': { title: '共享建材',   sub: '组团采购，现金拼价' },
   '/tracking':  { title: '订货跟踪大屏', sub: '全链路实时状态' },
   '/profile':   { title: '个人中心',   sub: '账户与服务管理' },
 };

@@ -1,4 +1,4 @@
-const { request } = require('../../utils/request');
+const homeSnapshot = require('../../data/home');
 
 Page({
   data: {
@@ -40,24 +40,17 @@ Page({
   },
 
   onLoad() {
-    this.fetchHomeData();
+    this.loadSnapshot();
   },
 
-  fetchHomeData() {
-    // Fetch stats
-    request({ url: '/homepage/stats' }).then(res => {
-      this.setData({
-        'stats[0].value': res.shared_steel_factories,
-        'stats[1].value': res.partner_concrete_stations,
-        'stats[2].value': res.fulfillment_rate.replace('%', '')
-      });
-    });
-
-    // Fetch settings for phone
-    request({ url: '/settings' }).then(res => {
-      if (res.phone_kefu) {
-        this.setData({ phoneKefu: res.phone_kefu.value });
-      }
+  loadSnapshot() {
+    const stats = homeSnapshot.stats || {};
+    const settings = homeSnapshot.settings || {};
+    this.setData({
+      'stats[0].value': stats.shared_steel_factories || '--',
+      'stats[1].value': stats.partner_concrete_stations || '--',
+      'stats[2].value': String(stats.fulfillment_rate || '98%').replace('%', ''),
+      phoneKefu: (settings.phone_kefu && settings.phone_kefu.value) || stats.phone_kefu || '400-888-9999'
     });
   },
 
@@ -78,10 +71,9 @@ Page({
         if (res.tapIndex === 0) {
           wx.makePhoneCall({ phoneNumber: this.data.phoneKefu });
         } else {
-          wx.showToast({ title: '客服正忙，请稍后', icon: 'none' });
+          wx.navigateTo({ url: '/pages/contact/index' });
         }
       }
     });
   }
 });
-

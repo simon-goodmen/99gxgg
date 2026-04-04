@@ -109,6 +109,6 @@
     </view>
 
     <button class="settings-save-btn" bindtap="handleSave">💾 保存设置</button>
-    <view class="logout-action" bindtap="handleLogout">退出当前管理账号</view>
+    <view class="logout-action" bindtap="handleLogout">退出当前登录</view>
   </scroll-view>
 </view>

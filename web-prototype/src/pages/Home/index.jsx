@@ -3,7 +3,7 @@ import { Phone, MessageCircle, MapPin, Star, Zap, TrendingUp, ChevronRight } fro
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
-const API = 'http://localhost:5000/api';
+const API = 'http://localhost:5001/api';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -110,7 +110,7 @@ const Home = () => {
           </div>
           <div className="home-entry" onClick={() => navigate('/materials')}>
             <div className="home-entry-icon" style={{background:'linear-gradient(135deg,#1b5e20,#004d40)'}}>📦</div>
-            <div className="home-entry-name">共享物资</div>
+            <div className="home-entry-name">共享建材</div>
             <div className="home-entry-sub">组团拼价</div>
           </div>
           <div className="home-entry" onClick={() => navigate('/tracking')}>

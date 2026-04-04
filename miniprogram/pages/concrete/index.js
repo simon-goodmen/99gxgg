@@ -1,4 +1,5 @@
 const { request } = require('../../utils/request');
+const concreteSnapshot = require('../../data/concrete');
 
 Page({
   data: {
@@ -30,29 +31,34 @@ Page({
   },
 
   fetchStations() {
-    wx.showLoading({ title: '加载中' });
-    request({ url: '/concrete/stations' })
-      .then(res => {
-        wx.hideLoading();
-        const defaultStation = res[0];
-        if (defaultStation) {
-          this.setData({
-            stations: res,
-            currentStation: defaultStation,
-            selectedGrade: defaultStation.grades[0],
-            currentPrice: this.calculatePrice(defaultStation.price, defaultStation.grades[0])
-          });
-        }
-      })
-      .catch(() => wx.hideLoading());
+    const stations = concreteSnapshot.stations || [];
+    const defaultStation = stations[0];
+    if (defaultStation) {
+      this.setData({
+        stations,
+        currentStation: defaultStation,
+        selectedGrade: defaultStation.grades[0],
+        currentPrice: this.calculatePrice(defaultStation.price, defaultStation.grades[0])
+      });
+    }
   },
 
   calculatePrice(base, grade) {
+    const priceMap = this.data.currentStation && this.data.currentStation.grade_prices;
+    if (priceMap && priceMap[grade] != null) {
+      return Number(priceMap[grade]);
+    }
     let price = parseFloat(base) || 0;
     const numMatch = grade.match(/C(\d+)/);
     const num = numMatch ? parseInt(numMatch[1]) : 30;
-    const diff = num - 30;
-    price += (diff / 5) * 15;
+    const strengthOffsets = {
+      15: -30,
+      20: -20,
+      25: -10,
+      30: 0,
+      35: 15
+    };
+    price += strengthOffsets[num] ?? 0;
     if (grade.includes('P6')) price += 15;
     if (grade.includes('P8')) price += 25;
     return price;

@@ -1,4 +1,5 @@
 const { request } = require('../../utils/request');
+const materialsSnapshot = require('../../data/materials');
 
 Page({
   data: {
@@ -33,21 +34,14 @@ Page({
   },
 
   fetchProducts() {
-    wx.showLoading({ title: '加载中' });
-    request({ url: '/materials/products' })
-      .then(res => {
-        wx.hideLoading();
-        // Group by category_id
-        const grouped = {};
-        res.forEach(p => {
-          const cat = p.category_id || 0;
-          if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(p);
-        });
-        this.setData({ allProducts: grouped });
-        this.updateProductList(this.data.activeCategory);
-      })
-      .catch(() => wx.hideLoading());
+    const grouped = {};
+    (materialsSnapshot.products || []).forEach(p => {
+      const cat = p.category_id || 0;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+    this.setData({ allProducts: grouped });
+    this.updateProductList(this.data.activeCategory);
   },
 
   updateProductList(idx) {

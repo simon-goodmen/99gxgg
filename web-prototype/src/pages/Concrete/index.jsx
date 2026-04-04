@@ -2,16 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, X, ChevronDown, Plus, Trash2, Zap, Factory } from 'lucide-react';
 import './Concrete.css';
 
+const API = 'http://localhost:5001/api';
+
 const Concrete = () => {
   const [stations, setStations] = useState([]);
   const [activeStationIdx, setActiveStationIdx] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/concrete/stations')
+    fetch(`${API}/concrete/stations`)
       .then(res => res.json())
       .then(data => {
-        setStations(data);
+        const normalized = (data || []).map((station) => {
+          const weeklyQuota = Number(station.weekly_quota ?? station.weeklyQuota ?? 0);
+          const soldQty = Number(station.sold_qty ?? station.soldQty ?? 0);
+          return {
+            ...station,
+            price: Number(station.price ?? 0),
+            grades: Array.isArray(station.grades) ? station.grades : [],
+            tags: Array.isArray(station.tags) ? station.tags : [],
+            grade_prices: station.grade_prices || {},
+            statusColor: station.status_color || station.statusColor || '#0F8265',
+            weeklyQuota,
+            soldQty,
+            condition: station.condition_text || station.condition || '正常接单',
+            conditionColor: station.condition_color || station.conditionColor || '#0F8265',
+            capacity: Number(station.capacity ?? Math.max(weeklyQuota - soldQty, 0)),
+            distance: station.distance || '郑州同城'
+          };
+        });
+        setStations(normalized);
         setLoading(false);
       });
   }, []);
@@ -43,12 +63,22 @@ const Concrete = () => {
 
   const currentStation = stations[activeStationIdx];
 
-  const getGradePrice = (basePrice, grade) => {
-    let price = basePrice;
+  const getGradePrice = (station, grade) => {
+    const exactPrice = station?.grade_prices?.[grade];
+    if (exactPrice != null) {
+      return Number(exactPrice);
+    }
+    let price = Number(station?.price ?? 0);
     const numMatch = grade.match(/C(\d+)/);
     const num = numMatch ? parseInt(numMatch[1]) : 30;
-    const diff = num - 30;
-    price += (diff / 5) * 15;
+    const strengthOffsets = {
+      15: -30,
+      20: -20,
+      25: -10,
+      30: 0,
+      35: 15
+    };
+    price += strengthOffsets[num] ?? 0;
     
     // 防水和特种附加费
     if (grade.includes('P6')) price += 15;
@@ -99,21 +129,36 @@ const Concrete = () => {
     if (!ordererName || !ordererPhone) { alert('请填写联系信息'); return; }
     if (ordererPhone.length < 11) { alert('请输入正确的11位手机号'); return; }
 
-    const userId = localStorage.getItem('userId') || null;
-
     // Build order items from orderItems
     const items = orderItems.map(item => ({
       product_name: `${item.grade} 商砼`,
       product_spec: `站点: ${item.station.name}, 日期: ${item.date}`,
       unit: 'm³',
       qty: item.qty,
-      unit_price: getGradePrice(item.station.price, item.grade)
+      unit_price: getGradePrice(item.station, item.grade)
     }));
 
     try {
+      const loginRes = await fetch(`${API}/auth/quick-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: ordererPhone, real_name: ordererName.trim() })
+      });
+      const loginData = await loginRes.json();
+      if (!loginData.success) {
+        alert(loginData.error || '登记失败，请稍后重试');
+        return;
+      }
+      localStorage.setItem('userId', loginData.user.id);
+      localStorage.setItem('userInfo', JSON.stringify({
+        name: loginData.user.real_name || ordererName.trim(),
+        phone: loginData.user.phone || ordererPhone,
+        email: ''
+      }));
+
       // First deduct inventory for each station
       for (const item of orderItems) {
-        const deductRes = await fetch(`http://localhost:5000/api/concrete/stations/${item.station.id}/deduct`, {
+        const deductRes = await fetch(`${API}/concrete/stations/${item.station.id}/deduct`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ qty: item.qty })
@@ -126,11 +171,11 @@ const Concrete = () => {
       }
 
       // Create order
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const res = await fetch(`${API}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: userId,
+          user_id: loginData.user.id,
           order_type: 'concrete',
           items: items,
           delivery_address: orderItems[0]?.address || '',
@@ -139,6 +184,7 @@ const Concrete = () => {
       });
       const data = await res.json();
       if (data.success) {
+        localStorage.setItem('lastOrderNo', data.order_no);
         alert(`🎉 抢订成功！\n订单号: ${data.order_no}\n【${ordererName}】下周清单额度 ${totalQty} m³ 已锁定\n供货方将在24小时内联系您。`);
         setOrderItems([]);
         setOrdererName('');
@@ -189,7 +235,7 @@ const Concrete = () => {
           </div>
 
           <div className="dash-slogan flex-slogan" style={{alignItems: 'baseline'}}>
-            <div className="price-tag-highlight" style={{fontSize: '24px', padding:'4px 16px'}}>¥{getGradePrice(currentStation.price, selectedDashboardGrade)}</div>
+            <div className="price-tag-highlight" style={{fontSize: '24px', padding:'4px 16px'}}>¥{getGradePrice(currentStation, selectedDashboardGrade)}</div>
             <div style={{fontSize: '12px', color:'rgba(255,255,255,0.8)', marginLeft: '-8px'}}>/方</div>
             <div className="slogan-text-group" style={{marginLeft: 'auto'}}>
               <div className="slogan-line1" style={{textAlign:'right'}}>共享厂站最低直供价</div>
@@ -197,7 +243,7 @@ const Concrete = () => {
             </div>
           </div>
           <div className="dash-tag-list">
-            {currentStation.tags.map((tag, i) => (
+            {(currentStation.tags || []).map((tag, i) => (
               <span key={i} className="info-tag">{tag}</span>
             ))}
           </div>
@@ -327,11 +373,11 @@ const Concrete = () => {
             <span style={{fontSize:'12px', color:'#A0AAB5', fontWeight:'400'}}>{new Date().getMonth() + 1}月{new Date().getDate()}日 数据</span>
           </div>
           <div className="overview-list">
-            {stations.map(s => {
+            {stations.map((s, idx) => {
               const remain = s.weeklyQuota - s.soldQty;
               const pct = s.weeklyQuota > 0 ? Math.round(s.soldQty / s.weeklyQuota * 100) : 100;
               return (
-                <div key={s.id} className="overview-item" onClick={() => setActiveStationIdx(s.id - 1)}>
+                <div key={s.id} className="overview-item" onClick={() => setActiveStationIdx(idx)}>
                   <div className="ov-left">
                     <span className="ov-name">{s.name}</span>
                     <span className={`status-pill`} style={{background: s.statusColor+'20', color: s.statusColor, border: `1px solid ${s.statusColor}40`}}>{s.status}</span>

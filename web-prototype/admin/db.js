@@ -1,12 +1,10 @@
 // backend/db.js
 const mysql = require('mysql2/promise');
+const { requireDbConfig } = require('../../load-env');
 
-// MySQL Credentials
+const baseConfig = requireDbConfig();
 const dbConfig = {
-  host: '99.99gxgg.com',
-  user: '99app',
-  password: '<REDACTED_DB_PASSWORD>',
-  database: '99app',
+  ...baseConfig,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -14,6 +12,6 @@ const dbConfig = {
 
 const pool = mysql.createPool(dbConfig);
 
-console.log('--- Connecting to MySQL (99.99gxgg.com / 99app) ---');
+console.log(`--- Connecting to MySQL (${dbConfig.host} / ${dbConfig.database}) ---`);
 
 module.exports = pool;

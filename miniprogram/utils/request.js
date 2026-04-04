@@ -1,4 +1,12 @@
-const BASE_URL = 'http://localhost:5000/api';
+const DEFAULT_BASE_URL = 'https://99.99gxgg.com/api';
+
+const getBaseUrl = () => {
+  try {
+    return wx.getStorageSync('apiBaseUrl') || DEFAULT_BASE_URL;
+  } catch (err) {
+    return DEFAULT_BASE_URL;
+  }
+};
 
 /**
  * 通用请求工具函数
@@ -11,7 +19,7 @@ const BASE_URL = 'http://localhost:5000/api';
 const request = (options) => {
   return new Promise((resolve, reject) => {
     wx.request({
-      url: `${BASE_URL}${options.url}`,
+      url: `${getBaseUrl()}${options.url}`,
       method: options.method || 'GET',
       data: options.data,
       header: {
@@ -42,5 +50,5 @@ const request = (options) => {
 
 module.exports = {
   request,
-  BASE_URL
+  BASE_URL: DEFAULT_BASE_URL
 };

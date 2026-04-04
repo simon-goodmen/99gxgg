@@ -1,10 +1,8 @@
 const mysql = require('mysql2/promise');
-const dbConfig = {
-  host: '99.99gxgg.com',
-  user: '99app',
-  password: '<REDACTED_DB_PASSWORD>',
-  database: '99app'
-};
+const { requireDbConfig, loadEnv } = require('../../load-env');
+
+loadEnv();
+const dbConfig = requireDbConfig();
 
 async function fix() {
   const conn = await mysql.createConnection(dbConfig);
@@ -24,8 +22,15 @@ async function fix() {
     // Check if admin user exists
     const [users] = await conn.query("SELECT * FROM admin_users WHERE username = 'admin'");
     if (users.length === 0) {
+      const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD;
+      if (!adminPassword) {
+        throw new Error('缺少 ADMIN_DEFAULT_PASSWORD，无法创建默认后台账号');
+      }
       console.log('Creating default admin user...');
-      await conn.query("INSERT INTO admin_users (username, password, role) VALUES ('admin', '<REDACTED_ADMIN_PASSWORD>', 'superadmin')");
+      await conn.query(
+        "INSERT INTO admin_users (username, password, role) VALUES (?, ?, ?)",
+        ['admin', adminPassword, 'superadmin']
+      );
       console.log('Default admin created');
     } else {
       console.log('Admin user exists:', users[0].username);
