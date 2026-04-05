@@ -37,6 +37,9 @@ const Home = () => {
   if (factories.length === 0) return <div style={{padding: '40px', textAlign: 'center'}}>暂无工厂数据</div>;
 
   const currentFactory = factories[activeFactoryIdx];
+  const currentMonthLabel = '4月可用档期';
+  const monthTotal = 3000;
+  const monthRemain = 2500;
 
   const processTypes = ['H型钢、网架', '箱型柱/十字柱', '管桁架', '重钢非标异形件', '光伏支架代工'];
 
@@ -104,7 +107,7 @@ const Home = () => {
       } else {
         alert('提交失败: ' + (data.error || '请稍后重试'));
       }
-    } catch (err) {
+    } catch {
       alert('网络错误，请检查网络连接后重试');
     }
   };
@@ -209,18 +212,18 @@ const Home = () => {
             <div className="left-title">
               <h3><CalendarClock size={20} color="#FFD700"/> 本月工期大盘</h3>
             </div>
-            <span className="month-tag">3月可用档期</span>
+            <span className="month-tag">{currentMonthLabel}</span>
           </div>
           
           <div className="capacity-status-card">
             <div className="status-top">
               <div className="status-item">
                 <span className="s-label">本月总体总产</span>
-                <span className="s-val">{currentFactory.monthTotal} <small>吨</small></span>
+                <span className="s-val">{monthTotal} <small>吨</small></span>
               </div>
               <div className="status-item highlight">
                 <span className="s-label">剩余可预订产能</span>
-                <span className="s-val primary">{currentFactory.monthRemain} <small>吨</small></span>
+                <span className="s-val primary">{monthRemain} <small>吨</small></span>
               </div>
             </div>
             

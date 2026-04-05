@@ -19,7 +19,7 @@ const Materials = () => {
   const [showCart, setShowCart] = useState(false);
   const [allProducts, setAllProducts] = useState({});
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState(CATEGORY_NAMES);
+  const categories = CATEGORY_NAMES;
   const [buyerName, setBuyerName] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
 
@@ -65,7 +65,7 @@ const Materials = () => {
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
 
   const calcItemPrice = (item) => {
-    let unit = item.product.price;
+    let unit = Number(item.product.groupPrice ?? item.product.price ?? 0);
     if (item.includeTax)     unit *= 1.03;
     if (item.includeFreight) unit += mockDistance * freightRate;
     if (item.includeUnload)  unit += unloadFee;
@@ -95,7 +95,7 @@ const Materials = () => {
 
   const calculateTotal = () => {
     if (!selectedProduct) return '0.00';
-    let base = selectedProduct.price;
+    let base = Number(selectedProduct.groupPrice ?? selectedProduct.price ?? 0);
     if (includeTax)     base *= 1.03;
     if (includeFreight) base += mockDistance * freightRate;
     if (includeUnload)  base += unloadFee;
@@ -196,7 +196,7 @@ const Materials = () => {
       } else {
         alert('提交失败: ' + (data.error || '请稍后重试'));
       }
-    } catch (err) {
+    } catch {
       alert('网络错误，请检查网络连接后重试');
     }
   };

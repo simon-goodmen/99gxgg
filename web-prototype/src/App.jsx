@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MobileLayout from './layouts/MobileLayout';
-import Home from './pages/Home';
 import Steel from './pages/Steel';
 import Concrete from './pages/Concrete';
 import Materials from './pages/Materials';
@@ -13,8 +12,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MobileLayout />}>
-          <Route index element={<Navigate to="/home" replace />} />
-          <Route path="home" element={<Home />} />
+          <Route index element={<Navigate to="/steel" replace />} />
+          <Route path="home" element={<Navigate to="/steel" replace />} />
           <Route path="steel" element={<Steel />} />
           <Route path="concrete" element={<Concrete />} />
           <Route path="materials" element={<Materials />} />

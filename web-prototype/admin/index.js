@@ -3,13 +3,43 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const pool = require('./db');
-const path = require('path');
+const { STEEL_FACTORY_PATCHES } = require('./defaults');
 
 const app = express();
 const PORT = 5001;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+function normalizeConcreteStation(row) {
+  const normalized = { ...row };
+  normalized.grades = normalized.grades ? normalized.grades.split(',') : [];
+  try {
+    normalized.grade_prices = normalized.grade_prices ? JSON.parse(normalized.grade_prices) : {};
+  } catch {
+    normalized.grade_prices = {};
+  }
+  normalized.tags = normalized.tags ? normalized.tags.split(',') : [];
+  return normalized;
+}
+
+async function syncSteelFactoriesToDb() {
+  for (const patch of STEEL_FACTORY_PATCHES) {
+    await pool.query(
+      'UPDATE steel_factories SET month_total=?, month_remain=? WHERE id=?',
+      [patch.month_total, patch.month_remain, patch.id]
+    );
+  }
+}
+
+async function syncDefaultBusinessData() {
+  try {
+    await syncSteelFactoriesToDb();
+    console.log('[Bootstrap] Steel defaults synced to DB');
+  } catch (err) {
+    console.error('[Bootstrap] Data sync failed:', err.message);
+  }
+}
 
 // Serve Admin UI
 app.use('/admin', express.static(__dirname));
@@ -201,17 +231,9 @@ app.put('/api/steel/timeline/:id', async (req, res) => {
 // ─── Concrete API ─────────────────────────────────────────────────────────────
 app.get('/api/concrete/stations', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM concrete_stations');
-    rows.forEach(r => {
-      r.grades = r.grades ? r.grades.split(',') : [];
-      try {
-        r.grade_prices = r.grade_prices ? JSON.parse(r.grade_prices) : {};
-      } catch {
-        r.grade_prices = {};
-      }
-      r.tags = r.tags ? r.tags.split(',') : [];
-    });
-    res.json(rows);
+    const [rows] = await pool.query('SELECT * FROM concrete_stations ORDER BY id ASC');
+    const normalizedRows = rows.map(normalizeConcreteStation);
+    res.json(normalizedRows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -372,24 +394,28 @@ app.post('/api/auth/verify-code', async (req, res) => {
 });
 
 app.post('/api/auth/quick-login', async (req, res) => {
-  const { phone, real_name } = req.body;
-  if (!phone || !real_name) {
+  const phone = String(req.body.phone || '').trim();
+  const realName = String(req.body.real_name || '').trim();
+  if (!phone || !realName) {
     return res.status(400).json({ error: '手机号和姓名必填' });
+  }
+  if (!/^1\d{10}$/.test(phone)) {
+    return res.status(400).json({ error: '请输入正确的11位手机号' });
   }
 
   try {
     let [rows] = await pool.query('SELECT * FROM app_users WHERE phone=? ORDER BY id DESC LIMIT 1', [phone]);
     if (rows.length === 0) {
-      const openid = `quick_${phone}_${Date.now()}`;
+      const openid = `quick_${phone}`;
       await pool.query(
         'INSERT INTO app_users (openid, phone, real_name, last_login) VALUES (?, ?, ?, NOW())',
-        [openid, phone, real_name]
+        [openid, phone, realName]
       );
       [rows] = await pool.query('SELECT * FROM app_users WHERE phone=? ORDER BY id DESC LIMIT 1', [phone]);
     } else {
       await pool.query(
         'UPDATE app_users SET real_name=?, last_login=NOW() WHERE id=?',
-        [real_name, rows[0].id]
+        [realName, rows[0].id]
       );
       [rows] = await pool.query('SELECT * FROM app_users WHERE id=?', [rows[0].id]);
     }
@@ -848,7 +874,18 @@ app.delete('/api/steel/factories/:id', async (req, res) => {
 
 // ─── Admin: Concrete CRUD ────────────────────────────────────────────────────
 app.post('/api/concrete/stations', async (req, res) => {
-  const { name, price, weekly_quota, condition_text, grades, grade_prices } = req.body;
+  const {
+    name,
+    price,
+    weekly_quota,
+    condition_text,
+    condition_color,
+    status,
+    status_color,
+    timeline_status,
+    grades,
+    grade_prices
+  } = req.body;
   const gradesStr = Array.isArray(grades) ? grades.join(',') : (grades || 'C15,C20,C25,C30,C35');
   const gradePricesStr = grade_prices ? JSON.stringify(grade_prices) : null;
   try {
@@ -856,7 +893,21 @@ app.post('/api/concrete/stations', async (req, res) => {
       `INSERT INTO concrete_stations
        (name, status, status_color, price, capacity, weekly_quota, sold_qty, grades, grade_prices, condition_text, condition_color, percentage, timeline_status)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [name, '开放预购', 'green', price||0, weekly_quota||0, weekly_quota||0, 0, gradesStr, gradePricesStr, condition_text||'正常供应', 'green', 0, 'active']
+      [
+        name,
+        status || '开放预购',
+        status_color || '#2E7D32',
+        price || 0,
+        weekly_quota || 0,
+        weekly_quota || 0,
+        0,
+        gradesStr,
+        gradePricesStr,
+        condition_text || '正常供应',
+        condition_color || '#2E7D32',
+        0,
+        timeline_status || '正常'
+      ]
     );
     res.json({ success: true, id: r.insertId });
   } catch (err) {
@@ -875,7 +926,7 @@ app.delete('/api/concrete/stations/:id', async (req, res) => {
 
 // ─── Admin: Materials CRUD ───────────────────────────────────────────────────
 app.post('/api/materials/products', async (req, res) => {
-  const { name, category_id, unit_price, price, unit, target_qty, group_price, description } = req.body;
+  const { name, category_id, unit_price, price, unit, target_qty, group_price } = req.body;
   const actualPrice = price || unit_price || 0;
   try {
     const [r] = await pool.query(
@@ -898,7 +949,8 @@ app.delete('/api/materials/products/:id', async (req, res) => {
 });
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await syncDefaultBusinessData();
   console.log(`--- Backend Server Running on http://localhost:${PORT} ---`);
   console.log(`--- Admin UI: http://localhost:${PORT}/admin ---`);
 });

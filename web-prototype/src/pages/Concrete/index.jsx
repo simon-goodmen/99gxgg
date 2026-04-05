@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, X, ChevronDown, Plus, Trash2, Zap, Factory } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, X, ChevronDown, Plus, Trash2, Zap, Factory } from 'lucide-react';
 import './Concrete.css';
 
 const API = 'http://localhost:5001/api';
@@ -9,54 +9,79 @@ const Concrete = () => {
   const [activeStationIdx, setActiveStationIdx] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch(`${API}/concrete/stations`)
-      .then(res => res.json())
-      .then(data => {
-        const normalized = (data || []).map((station) => {
-          const weeklyQuota = Number(station.weekly_quota ?? station.weeklyQuota ?? 0);
-          const soldQty = Number(station.sold_qty ?? station.soldQty ?? 0);
-          return {
-            ...station,
-            price: Number(station.price ?? 0),
-            grades: Array.isArray(station.grades) ? station.grades : [],
-            tags: Array.isArray(station.tags) ? station.tags : [],
-            grade_prices: station.grade_prices || {},
-            statusColor: station.status_color || station.statusColor || '#0F8265',
-            weeklyQuota,
-            soldQty,
-            condition: station.condition_text || station.condition || '正常接单',
-            conditionColor: station.condition_color || station.conditionColor || '#0F8265',
-            capacity: Number(station.capacity ?? Math.max(weeklyQuota - soldQty, 0)),
-            distance: station.distance || '郑州同城'
-          };
-        });
-        setStations(normalized);
-        setLoading(false);
-      });
-  }, []);
-
   const [selectedDashboardGrade, setSelectedDashboardGrade] = useState('');
 
-  useEffect(() => {
-    if (stations.length > 0) {
-      setSelectedDashboardGrade(stations[activeStationIdx]?.grades?.[0] || '');
-    }
-  }, [activeStationIdx, stations]);
-
   const [orderItems, setOrderItems] = useState([]);
-  const [showOrderModal, setShowOrderModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showStationSwitcher, setShowStationSwitcher] = useState(false);
 
-  const [formStationId, setFormStationId] = useState(1);
+  const [formStationId, setFormStationId] = useState('');
   const [formGrade, setFormGrade] = useState('');
   const [formDate, setFormDate] = useState('');
   const [formQty, setFormQty] = useState('');
   const [formAddress, setFormAddress] = useState('');
   const [ordererName, setOrdererName] = useState('');
   const [ordererPhone, setOrdererPhone] = useState('');
+  const formStationIdRef = useRef('');
+
+  useEffect(() => {
+    formStationIdRef.current = formStationId;
+  }, [formStationId]);
+
+  useEffect(() => {
+    const normalizeStation = (station) => {
+      const gradePrices = station.grade_prices && typeof station.grade_prices === 'object'
+        ? station.grade_prices
+        : {};
+      const gradesFromPriceMap = Object.keys(gradePrices);
+      const grades = Array.isArray(station.grades) && station.grades.length > 0
+        ? station.grades
+        : gradesFromPriceMap;
+      const weeklyQuota = Number(station.weekly_quota ?? station.weeklyQuota ?? 0);
+      const soldQty = Number(station.sold_qty ?? station.soldQty ?? 0);
+      return {
+        ...station,
+        price: Number(station.price ?? 0),
+        grades,
+        tags: Array.isArray(station.tags) ? station.tags : [],
+        grade_prices: gradePrices,
+        statusColor: station.status_color || station.statusColor || '#0F8265',
+        weeklyQuota,
+        soldQty,
+        condition: station.condition_text || station.condition || '正常接单',
+        conditionColor: station.condition_color || station.conditionColor || '#0F8265',
+        capacity: Number(station.capacity ?? Math.max(weeklyQuota - soldQty, 0)),
+        distance: station.distance || '郑州同城'
+      };
+    };
+
+    const loadStations = () => {
+      fetch(`${API}/concrete/stations?t=${Date.now()}`, { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          const normalized = (data || []).map(normalizeStation);
+          setStations(normalized);
+          if (normalized.length > 0) {
+            setActiveStationIdx((prevIdx) => Math.min(prevIdx, normalized.length - 1));
+            setFormStationId((prevId) => prevId || normalized[0].id);
+            setFormGrade((prevGrade) => {
+              const currentFormStationId = formStationIdRef.current || normalized[0].id;
+              const stationForForm = normalized.find((item) => item.id === currentFormStationId) || normalized[0];
+              return stationForForm.grades.includes(prevGrade) ? prevGrade : (stationForForm.grades[0] || '');
+            });
+          }
+          setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    };
+
+    loadStations();
+    const intervalId = setInterval(loadStations, 15000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   if (loading) return <div style={{padding: '40px', textAlign: 'center'}}>加载商砼站实时数据...</div>;
   if (stations.length === 0) return <div style={{padding: '40px', textAlign: 'center'}}>暂无商砼站数据</div>;
@@ -65,38 +90,16 @@ const Concrete = () => {
 
   const getGradePrice = (station, grade) => {
     const exactPrice = station?.grade_prices?.[grade];
-    if (exactPrice != null) {
+    if (exactPrice != null && exactPrice !== '') {
       return Number(exactPrice);
     }
-    let price = Number(station?.price ?? 0);
-    const numMatch = grade.match(/C(\d+)/);
-    const num = numMatch ? parseInt(numMatch[1]) : 30;
-    const strengthOffsets = {
-      15: -30,
-      20: -20,
-      25: -10,
-      30: 0,
-      35: 15
-    };
-    price += strengthOffsets[num] ?? 0;
-    
-    // 防水和特种附加费
-    if (grade.includes('P6')) price += 15;
-    if (grade.includes('P8')) price += 25;
-    
-    return price;
+    return Number(station?.price ?? 0);
   };
 
   const totalQty = orderItems.reduce((sum, i) => sum + i.qty, 0);
-
-  const handleOpenModal = () => {
-    setFormStationId(currentStation.id);
-    setFormGrade(currentStation.grades[0]);
-    setFormDate('');
-    setFormQty('');
-    setFormAddress('');
-    setShowOrderModal(true);
-  };
+  const dashboardGrade = currentStation.grades.includes(selectedDashboardGrade)
+    ? selectedDashboardGrade
+    : (currentStation.grades[0] || '');
 
   const handleAddToList = () => {
     if (!formDate || !formQty || !formAddress) {
@@ -114,7 +117,6 @@ const Concrete = () => {
     };
     setOrderItems([...orderItems, newItem]);
     setFormQty('');
-    setShowOrderModal(false);
   };
 
   const handleGrabOrder = () => {
@@ -193,7 +195,7 @@ const Concrete = () => {
       } else {
         alert('提交失败: ' + (data.error || '请稍后重试'));
       }
-    } catch (err) {
+    } catch {
       alert('网络错误，请检查网络连接后重试');
     }
   };
@@ -223,9 +225,9 @@ const Concrete = () => {
                 onClick={() => setSelectedDashboardGrade(g)}
                 style={{
                   padding: '4px 14px', borderRadius: '14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                  border: selectedDashboardGrade === g ? '1px solid #FFD700' : '1px solid rgba(255,255,255,0.2)',
-                  background: selectedDashboardGrade === g ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
-                  color: selectedDashboardGrade === g ? '#FFD700' : 'rgba(255,255,255,0.7)',
+                  border: dashboardGrade === g ? '1px solid #FFD700' : '1px solid rgba(255,255,255,0.2)',
+                  background: dashboardGrade === g ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
+                  color: dashboardGrade === g ? '#FFD700' : 'rgba(255,255,255,0.7)',
                   transition: 'all 0.2s'
                 }}
               >
@@ -235,7 +237,7 @@ const Concrete = () => {
           </div>
 
           <div className="dash-slogan flex-slogan" style={{alignItems: 'baseline'}}>
-            <div className="price-tag-highlight" style={{fontSize: '24px', padding:'4px 16px'}}>¥{getGradePrice(currentStation, selectedDashboardGrade)}</div>
+            <div className="price-tag-highlight" style={{fontSize: '24px', padding:'4px 16px'}}>¥{getGradePrice(currentStation, dashboardGrade)}</div>
             <div style={{fontSize: '12px', color:'rgba(255,255,255,0.8)', marginLeft: '-8px'}}>/方</div>
             <div className="slogan-text-group" style={{marginLeft: 'auto'}}>
               <div className="slogan-line1" style={{textAlign:'right'}}>共享厂站最低直供价</div>

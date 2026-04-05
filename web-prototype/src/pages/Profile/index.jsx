@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Settings, ChevronRight, ChevronLeft, FileText, Wallet,
   UserCircle2, ShieldCheck,
@@ -73,13 +73,7 @@ const Profile = () => {
   }, []);
 
   // Fetch user data when logged in
-  useEffect(() => {
-    if (isLoggedIn && userId) {
-      fetchUserData();
-    }
-  }, [isLoggedIn, userId]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch user info
@@ -133,7 +127,13 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (isLoggedIn && userId) {
+      fetchUserData();
+    }
+  }, [isLoggedIn, userId, fetchUserData]);
 
   const handleQuickLogin = async () => {
     if (!loginPhone || loginPhone.length !== 11) {
@@ -172,7 +172,7 @@ const Profile = () => {
       } else {
         alert(data.error || '登录失败');
       }
-    } catch (err) {
+    } catch {
       alert('网络错误');
     } finally {
       setLoginLoading(false);
@@ -241,7 +241,7 @@ const Profile = () => {
       } else {
         alert('添加失败');
       }
-    } catch (err) {
+    } catch {
       alert('网络错误');
     }
   };
@@ -255,7 +255,7 @@ const Profile = () => {
       } else {
         alert('删除失败');
       }
-    } catch (err) {
+    } catch {
       alert('网络错误');
     }
   };
@@ -276,7 +276,7 @@ const Profile = () => {
       } else {
         alert('保存失败');
       }
-    } catch (err) {
+    } catch {
       alert('网络错误');
     }
   };
@@ -460,7 +460,7 @@ const Profile = () => {
           <div className="login-invitation" onClick={() => setShowLoginModal(true)}>
             <div className="li-left">
               <LogIn className="li-icon" size={20} />
-              <span className="li-label">填写姓名和手机号</span>
+              <span className="li-label">手机号+姓名登录/注册</span>
             </div>
             <div className="li-action">
               立即开启 <ChevronRight size={14} />
@@ -646,7 +646,7 @@ const Profile = () => {
               <button className="pm-submit-btn" onClick={handleQuickLogin} disabled={loginLoading}>
                 {loginLoading ? '登录中...' : '进入我的页面'}
               </button>
-              <p className="pm-footer-hint">只填手机号和姓名即可下单，不需要密码，也不需要验证码</p>
+              <p className="pm-footer-hint">手机号+姓名即可注册并登录，不需要密码</p>
             </div>
           </div>
         </div>

@@ -37,3 +37,4 @@ logs/
 /tmp/
 *.tmp
 .aider*
+.codex-run/

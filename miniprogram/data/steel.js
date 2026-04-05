@@ -16,7 +16,7 @@ module.exports = {
       "condition_text": "二班倒抢工",
       "condition_color": "#FFB74D",
       "month_total": "3,000",
-      "month_remain": "1,240",
+      "month_remain": "2,500",
       "percentage": 58.7,
       "timeline_status": "充裕",
       "timelineBlocks": [

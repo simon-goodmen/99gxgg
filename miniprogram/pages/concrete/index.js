@@ -1,5 +1,4 @@
 const { request } = require('../../utils/request');
-const concreteSnapshot = require('../../data/concrete');
 
 Page({
   data: {
@@ -31,44 +30,54 @@ Page({
   },
 
   fetchStations() {
-    const stations = concreteSnapshot.stations || [];
-    const defaultStation = stations[0];
-    if (defaultStation) {
-      this.setData({
-        stations,
-        currentStation: defaultStation,
-        selectedGrade: defaultStation.grades[0],
-        currentPrice: this.calculatePrice(defaultStation.price, defaultStation.grades[0])
+    request({ url: '/concrete/stations' })
+      .then((rows = []) => {
+        const stations = rows.map((station) => {
+          const weeklyQuota = Number(station.weekly_quota ?? station.weeklyQuota ?? 0);
+          const soldQty = Number(station.sold_qty ?? station.soldQty ?? 0);
+          return {
+            ...station,
+            price: Number(station.price ?? 0),
+            grades: Array.isArray(station.grades) ? station.grades : [],
+            tags: Array.isArray(station.tags) ? station.tags : [],
+            grade_prices: station.grade_prices || {},
+            statusColor: station.status_color || station.statusColor || '#0F8265',
+            weeklyQuota,
+            soldQty,
+            condition: station.condition_text || station.condition || '正常接单',
+            conditionColor: station.condition_color || station.conditionColor || '#0F8265',
+            capacity: Number(station.capacity ?? Math.max(weeklyQuota - soldQty, 0)),
+            distance: station.distance || '郑州同城'
+          };
+        });
+        const defaultStation = stations[0];
+        if (!defaultStation) {
+          this.setData({ stations: [], currentStation: null });
+          return;
+        }
+        this.setData({
+          stations,
+          currentStation: defaultStation,
+          selectedGrade: defaultStation.grades[0] || '',
+          currentPrice: this.calculatePrice(defaultStation, defaultStation.grades[0])
+        });
       });
-    }
   },
 
-  calculatePrice(base, grade) {
-    const priceMap = this.data.currentStation && this.data.currentStation.grade_prices;
-    if (priceMap && priceMap[grade] != null) {
+  calculatePrice(station, grade) {
+    if (!station) return 0;
+    const priceMap = station.grade_prices || {};
+    if (grade && priceMap[grade] != null && priceMap[grade] !== '') {
       return Number(priceMap[grade]);
     }
-    let price = parseFloat(base) || 0;
-    const numMatch = grade.match(/C(\d+)/);
-    const num = numMatch ? parseInt(numMatch[1]) : 30;
-    const strengthOffsets = {
-      15: -30,
-      20: -20,
-      25: -10,
-      30: 0,
-      35: 15
-    };
-    price += strengthOffsets[num] ?? 0;
-    if (grade.includes('P6')) price += 15;
-    if (grade.includes('P8')) price += 25;
-    return price;
+    return Number(station.price || 0);
   },
 
   onGradeSelect(e) {
     const grade = e.currentTarget.dataset.grade;
     this.setData({
       selectedGrade: grade,
-      currentPrice: this.calculatePrice(this.data.currentStation.price, grade)
+      currentPrice: this.calculatePrice(this.data.currentStation, grade)
     });
   },
 
@@ -81,8 +90,8 @@ Page({
     this.setData({
       activeStationIdx: idx,
       currentStation: st,
-      selectedGrade: st.grades[0],
-      currentPrice: this.calculatePrice(st.price, st.grades[0]),
+      selectedGrade: st.grades[0] || '',
+      currentPrice: this.calculatePrice(st, st.grades[0]),
       showStationSwitcher: false
     });
   },
@@ -106,7 +115,7 @@ Page({
       grade: currentStation.grades[formGradeIdx],
       date: formDate,
       qty: parseInt(formQty),
-      unitPrice: this.calculatePrice(currentStation.price, currentStation.grades[formGradeIdx]),
+      unitPrice: this.calculatePrice(currentStation, currentStation.grades[formGradeIdx]),
       address: formAddress
     };
     const newList = [...this.data.orderItems, newItem];

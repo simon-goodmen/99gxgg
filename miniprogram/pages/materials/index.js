@@ -1,5 +1,4 @@
 const { request } = require('../../utils/request');
-const materialsSnapshot = require('../../data/materials');
 
 Page({
   data: {
@@ -34,14 +33,24 @@ Page({
   },
 
   fetchProducts() {
-    const grouped = {};
-    (materialsSnapshot.products || []).forEach(p => {
-      const cat = p.category_id || 0;
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(p);
-    });
-    this.setData({ allProducts: grouped });
-    this.updateProductList(this.data.activeCategory);
+    request({ url: '/materials/products' })
+      .then((products = []) => {
+        const grouped = {};
+        products.forEach((product) => {
+          const rawCategoryId = Number(product.category_id ?? 0);
+          const categoryIndex = rawCategoryId > 0 ? rawCategoryId - 1 : rawCategoryId;
+          if (!grouped[categoryIndex]) grouped[categoryIndex] = [];
+          grouped[categoryIndex].push({
+            ...product,
+            price: Number(product.price ?? 0),
+            groupPrice: Number(product.group_price ?? product.groupPrice ?? 0),
+            currentQty: Number(product.current_qty ?? product.currentQty ?? 0),
+            targetQty: Number(product.target_qty ?? product.targetQty ?? 0)
+          });
+        });
+        this.setData({ allProducts: grouped });
+        this.updateProductList(this.data.activeCategory);
+      });
   },
 
   updateProductList(idx) {
@@ -96,7 +105,7 @@ Page({
     let total = 0;
     cartItems.forEach(item => {
       count += item.qty;
-      let unit = parseFloat(item.product.price);
+      let unit = parseFloat(item.product.groupPrice ?? item.product.price);
       if (item.tax) unit *= 1.03;
       if (item.freight) unit += 15;
       if (item.unload) unit += 10;
@@ -130,7 +139,7 @@ Page({
           product_name: item.product.name,
           product_spec: item.product.model || '',
           qty: item.qty,
-          unit_price: parseFloat(item.product.price),
+          unit_price: parseFloat(item.product.groupPrice ?? item.product.price),
           unit: item.product.unit
         })),
         delivery_address: '自提/协商配送'

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Factory, Truck, Package, Activity, UserCircle } from 'lucide-react';
+import { Factory, Truck, Package, Activity, UserCircle } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { path: '/home',      label: '首页',     icon: Home },
   { path: '/steel',     label: '共享钢构', icon: Factory },
   { path: '/concrete',  label: '共享商砼', icon: Truck },
   { path: '/materials', label: '共享建材', icon: Package },
@@ -12,7 +11,6 @@ const NAV_ITEMS = [
 ];
 
 const PAGE_TITLES = {
-  '/home':      { title: '99共享建材',  sub: '郑州建材共享平台' },
   '/steel':     { title: '共享钢构',   sub: '99钢结构共享工厂' },
   '/concrete':  { title: '郑州商砼拼单', sub: '本周额度实时更新' },
   '/materials': { title: '共享建材',   sub: '组团采购，现金拼价' },

@@ -489,6 +489,37 @@
       <div class="field-group"><label>C35价格</label><input id="cf-p35" type="number" placeholder="235"></div>
       <div class="field-group"><label>状态描述</label><input id="cf-condition" placeholder="正常供应"></div>
     </div>
+    <div class="form-row">
+      <div class="field-group"><label>接单状态</label>
+        <select id="cf-status">
+          <option value="开放预购">开放预购</option>
+          <option value="在产正常">在产正常</option>
+          <option value="接单紧张">接单紧张</option>
+          <option value="暂停接单">暂停接单</option>
+        </select>
+      </div>
+      <div class="field-group"><label>状态颜色</label>
+        <select id="cf-status-color">
+          <option value="#2E7D32">绿色</option>
+          <option value="#FB8C00">橙色</option>
+          <option value="#C62828">红色</option>
+          <option value="#1565C0">蓝色</option>
+          <option value="#6D4C41">棕色</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>站况颜色</label>
+        <select id="cf-condition-color">
+          <option value="#2E7D32">绿色</option>
+          <option value="#FB8C00">橙色</option>
+          <option value="#C62828">红色</option>
+          <option value="#1565C0">蓝色</option>
+          <option value="#6A1B9A">紫色</option>
+        </select>
+      </div>
+      <div class="field-group"><label>排产状态</label><input id="cf-timeline-status" placeholder="正常"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-concrete-add')">取消</button>
       <button class="btn btn-primary" onclick="submitConcrete()">确认新增</button>
@@ -498,7 +529,7 @@
 
 <div class="modal-overlay" id="modal-concrete-edit">
   <div class="modal-box">
-    <h3>编辑商砼站销售标号与价格</h3>
+    <h3>编辑商砼站销售标号、价格与状态</h3>
     <input id="cef-id" type="hidden">
     <div class="field-group"><label>站点名称</label><input id="cef-name" placeholder="搅拌站名称"></div>
     <div class="form-row">
@@ -517,6 +548,37 @@
     <div class="form-row">
       <div class="field-group"><label>C35价格</label><input id="cef-p35" type="number"></div>
       <div class="field-group"><label>状态描述</label><input id="cef-condition" placeholder="正常供应"></div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>接单状态</label>
+        <select id="cef-status">
+          <option value="开放预购">开放预购</option>
+          <option value="在产正常">在产正常</option>
+          <option value="接单紧张">接单紧张</option>
+          <option value="暂停接单">暂停接单</option>
+        </select>
+      </div>
+      <div class="field-group"><label>状态颜色</label>
+        <select id="cef-status-color">
+          <option value="#2E7D32">绿色</option>
+          <option value="#FB8C00">橙色</option>
+          <option value="#C62828">红色</option>
+          <option value="#1565C0">蓝色</option>
+          <option value="#6D4C41">棕色</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field-group"><label>站况颜色</label>
+        <select id="cef-condition-color">
+          <option value="#2E7D32">绿色</option>
+          <option value="#FB8C00">橙色</option>
+          <option value="#C62828">红色</option>
+          <option value="#1565C0">蓝色</option>
+          <option value="#6A1B9A">紫色</option>
+        </select>
+      </div>
+      <div class="field-group"><label>排产状态</label><input id="cef-timeline-status" placeholder="正常"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-concrete-edit')">取消</button>
@@ -769,6 +831,11 @@ function renderConcretePriceMap(priceMap) {
     .map(grade => `<div style="white-space:nowrap">${grade}: ¥${priceMap[grade]}</div>`)
     .join('');
 }
+function renderConcreteStatusBadge(status, color) {
+  const safeStatus = status || '开放预购';
+  const safeColor = color || '#2E7D32';
+  return `<span class="badge" style="background:${safeColor}20;color:${safeColor};border:1px solid ${safeColor}55">${safeStatus}</span>`;
+}
 function loadConcrete() {
   const q = (document.getElementById('concrete-search')||{}).value||'';
   fetch(API + '/concrete/stations').then(r => r.json()).then(data => {
@@ -777,7 +844,7 @@ function loadConcrete() {
     tbody.innerHTML = filtered.map(s => `<tr>
       <td>${s.id}</td>
       <td><strong>${s.name}</strong></td>
-      <td><span class="badge badge-green">${s.status||'开放'}</span></td>
+      <td>${renderConcreteStatusBadge(s.status, s.status_color)}</td>
       <td>${(s.grades || []).join(' / ') || '-'}</td>
       <td>${renderConcretePriceMap(s.grade_prices || {}) || ('C30: ¥' + (s.price || '-'))}</td>
       <td>${s.weekly_quota||'-'}</td>
@@ -797,7 +864,11 @@ function submitConcrete() {
     name: document.getElementById('cf-name').value,
     price: Number(document.getElementById('cf-price').value || gradePrices.C30 || 0),
     weekly_quota: Number(document.getElementById('cf-quota').value || 0),
+    status: document.getElementById('cf-status').value,
+    status_color: document.getElementById('cf-status-color').value,
     condition_text: document.getElementById('cf-condition').value,
+    condition_color: document.getElementById('cf-condition-color').value,
+    timeline_status: document.getElementById('cf-timeline-status').value,
     grades: (document.getElementById('cf-grades').value || Object.keys(gradePrices).join(',')).split(',').map(s => s.trim()).filter(Boolean),
     grade_prices: gradePrices
   };
@@ -812,6 +883,10 @@ function openConcreteEdit(serializedStation) {
   document.getElementById('cef-quota').value = s.weekly_quota || '';
   document.getElementById('cef-grades').value = (s.grades || []).join(',');
   document.getElementById('cef-condition').value = s.condition_text || '';
+  document.getElementById('cef-status').value = s.status || '开放预购';
+  document.getElementById('cef-status-color').value = s.status_color || '#2E7D32';
+  document.getElementById('cef-condition-color').value = s.condition_color || '#2E7D32';
+  document.getElementById('cef-timeline-status').value = s.timeline_status || '正常';
   const prices = s.grade_prices || {};
   document.getElementById('cef-p15').value = prices.C15 ?? '';
   document.getElementById('cef-p20').value = prices.C20 ?? '';
@@ -827,7 +902,11 @@ function submitConcreteEdit() {
     name: document.getElementById('cef-name').value,
     price: Number(document.getElementById('cef-price').value || gradePrices.C30 || 0),
     weekly_quota: Number(document.getElementById('cef-quota').value || 0),
+    status: document.getElementById('cef-status').value,
+    status_color: document.getElementById('cef-status-color').value,
     condition_text: document.getElementById('cef-condition').value,
+    condition_color: document.getElementById('cef-condition-color').value,
+    timeline_status: document.getElementById('cef-timeline-status').value,
     grades: (document.getElementById('cef-grades').value || Object.keys(gradePrices).join(',')).split(',').map(s => s.trim()).filter(Boolean),
     grade_prices: gradePrices
   };
