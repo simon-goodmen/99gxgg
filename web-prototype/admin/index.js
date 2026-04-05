@@ -2,6 +2,8 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const crypto = require('crypto');
+const path = require('path');
 const pool = require('./db');
 const { STEEL_FACTORY_PATCHES } = require('./defaults');
 
@@ -10,6 +12,71 @@ const PORT = 5001;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+const ADMIN_SESSION_COOKIE = 'admin_session';
+const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const adminSessions = new Map();
+
+function parseCookies(headerValue = '') {
+  return headerValue.split(';').reduce((acc, part) => {
+    const [rawKey, ...rest] = part.trim().split('=');
+    if (!rawKey) return acc;
+    acc[rawKey] = decodeURIComponent(rest.join('=') || '');
+    return acc;
+  }, {});
+}
+
+function createAdminSession(user) {
+  const token = crypto.randomBytes(24).toString('hex');
+  adminSessions.set(token, {
+    user,
+    expiresAt: Date.now() + ADMIN_SESSION_TTL_MS
+  });
+  return token;
+}
+
+function getAdminSession(req) {
+  const token = parseCookies(req.headers.cookie || '')[ADMIN_SESSION_COOKIE];
+  if (!token) return null;
+
+  const session = adminSessions.get(token);
+  if (!session) return null;
+  if (session.expiresAt <= Date.now()) {
+    adminSessions.delete(token);
+    return null;
+  }
+
+  session.expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
+  return { token, ...session };
+}
+
+function setAdminSessionCookie(res, token) {
+  res.setHeader('Set-Cookie', `${ADMIN_SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${ADMIN_SESSION_TTL_MS / 1000}`);
+}
+
+function clearAdminSessionCookie(res) {
+  res.setHeader('Set-Cookie', `${ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+}
+
+function requireAdminApiAuth(req, res, next) {
+  const session = getAdminSession(req);
+  if (!session) {
+    return res.status(401).json({ success: false, message: '请先登录后台账号' });
+  }
+  req.adminUser = session.user;
+  req.adminSessionToken = session.token;
+  next();
+}
+
+function requireAdminPageAuth(req, res, next) {
+  const session = getAdminSession(req);
+  if (!session) {
+    return res.redirect('/admin');
+  }
+  req.adminUser = session.user;
+  req.adminSessionToken = session.token;
+  next();
+}
 
 function normalizeConcreteStation(row) {
   const normalized = { ...row };
@@ -41,6 +108,10 @@ async function syncDefaultBusinessData() {
   }
 }
 
+app.get('/admin/dashboard.html', requireAdminPageAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+
 // Serve Admin UI
 app.use('/admin', express.static(__dirname));
 
@@ -63,13 +134,26 @@ app.post('/api/admin/login', async (req, res) => {
       [username, password]
     );
     if (rows.length > 0) {
-      res.json({ success: true, user: { id: rows[0].id, username: rows[0].username, role: rows[0].role } });
+      const user = { id: rows[0].id, username: rows[0].username, role: rows[0].role };
+      const token = createAdminSession(user);
+      setAdminSessionCookie(res, token);
+      res.json({ success: true, user });
     } else {
       res.status(401).json({ success: false, message: '账号或密码错误' });
     }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/admin/me', requireAdminApiAuth, (req, res) => {
+  res.json({ success: true, user: req.adminUser });
+});
+
+app.post('/api/admin/logout', requireAdminApiAuth, (req, res) => {
+  adminSessions.delete(req.adminSessionToken);
+  clearAdminSessionCookie(res);
+  res.json({ success: true });
 });
 
 // ─── Platform Settings ────────────────────────────────────────────────────────
@@ -84,7 +168,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireAdminApiAuth, async (req, res) => {
   const updates = req.body; // { key: value, ... }
   try {
     for (const [k, v] of Object.entries(updates)) {
@@ -139,7 +223,7 @@ app.get('/api/homepage/quotes', async (req, res) => {
   }
 });
 
-app.post('/api/homepage/quotes', async (req, res) => {
+app.post('/api/homepage/quotes', requireAdminApiAuth, async (req, res) => {
   const { product_name, price, unit, effective_time, tags, is_active, sort_order } = req.body;
   try {
     const tagsStr = Array.isArray(tags) ? tags.join(',') : tags;
@@ -153,7 +237,7 @@ app.post('/api/homepage/quotes', async (req, res) => {
   }
 });
 
-app.put('/api/homepage/quotes/:id', async (req, res) => {
+app.put('/api/homepage/quotes/:id', requireAdminApiAuth, async (req, res) => {
   const { id } = req.params;
   const { product_name, price, unit, effective_time, tags, is_active, sort_order } = req.body;
   try {
@@ -168,7 +252,7 @@ app.put('/api/homepage/quotes/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/homepage/quotes/:id', async (req, res) => {
+app.delete('/api/homepage/quotes/:id', requireAdminApiAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM homepage_quotes WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -203,7 +287,7 @@ app.get('/api/steel/factories', async (req, res) => {
   }
 });
 
-app.post('/api/steel/factories/:id', async (req, res) => {
+app.post('/api/steel/factories/:id', requireAdminApiAuth, async (req, res) => {
   const { id } = req.params;
   const { status, status_color, orders, weekly_capacity, condition_text, condition_color, month_remain, percentage, timeline_status } = req.body;
   try {
@@ -218,7 +302,7 @@ app.post('/api/steel/factories/:id', async (req, res) => {
 });
 
 // Update a single timeline block
-app.put('/api/steel/timeline/:id', async (req, res) => {
+app.put('/api/steel/timeline/:id', requireAdminApiAuth, async (req, res) => {
   const { name, theme } = req.body;
   try {
     await pool.query('UPDATE steel_timeline SET name=?,theme=? WHERE id=?', [name, theme, req.params.id]);
@@ -255,7 +339,7 @@ app.post('/api/leads', async (req, res) => {
   }
 });
 
-app.get('/api/admin/leads', async (req, res) => {
+app.get('/api/admin/leads', requireAdminApiAuth, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM customer_leads ORDER BY created_at DESC, id DESC');
     res.json(rows);
@@ -264,7 +348,7 @@ app.get('/api/admin/leads', async (req, res) => {
   }
 });
 
-app.post('/api/concrete/stations/:id', async (req, res) => {
+app.post('/api/concrete/stations/:id', requireAdminApiAuth, async (req, res) => {
   const { id } = req.params;
   const {
     name, status, status_color, price, weekly_quota, sold_qty,
@@ -330,7 +414,7 @@ app.get('/api/materials/products', async (req, res) => {
   }
 });
 
-app.post('/api/materials/products/:id', async (req, res) => {
+app.post('/api/materials/products/:id', requireAdminApiAuth, async (req, res) => {
   const { id } = req.params;
   const { price, group_price, current_qty } = req.body;
   try {
@@ -645,7 +729,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Update order status
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', requireAdminApiAuth, async (req, res) => {
   const { status } = req.body;
   const validStatuses = ['pending','confirmed','delivering','completed','cancelled'];
   if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
@@ -657,7 +741,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/logistics', async (req, res) => {
+app.put('/api/orders/:id/logistics', requireAdminApiAuth, async (req, res) => {
   const { logistics_company, logistics_no, driver_name, driver_phone, dispatcher_phone, vehicle_no, shipped_at } = req.body;
   if (!logistics_company || !logistics_no) {
     return res.status(400).json({ error: '物流公司和物流单号必填' });
@@ -718,7 +802,7 @@ app.put('/api/orders/:id/logistics', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/logistics-progress', async (req, res) => {
+app.put('/api/orders/:id/logistics-progress', requireAdminApiAuth, async (req, res) => {
   const { logistics_status, logistics_remark } = req.body;
   const validStatuses = ['assigned', 'loaded', 'in_transit', 'arriving', 'signed', 'exception'];
   if (!validStatuses.includes(logistics_status)) {
@@ -797,7 +881,7 @@ app.put('/api/orders/:id/logistics-progress', async (req, res) => {
 });
 
 // Update tracking node
-app.put('/api/orders/tracking/:nodeId', async (req, res) => {
+app.put('/api/orders/tracking/:nodeId', requireAdminApiAuth, async (req, res) => {
   const { status, event_time } = req.body;
   try {
     await pool.query(
@@ -811,7 +895,7 @@ app.put('/api/orders/tracking/:nodeId', async (req, res) => {
 });
 
 // ─── Admin: All Users List ────────────────────────────────────────────────────
-app.get('/api/admin/users', async (req, res) => {
+app.get('/api/admin/users', requireAdminApiAuth, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT id,phone,real_name,company,role,created_at,last_login FROM app_users ORDER BY id DESC');
     res.json(rows);
@@ -820,7 +904,7 @@ app.get('/api/admin/users', async (req, res) => {
   }
 });
 
-app.put('/api/admin/users/:id/role', async (req, res) => {
+app.put('/api/admin/users/:id/role', requireAdminApiAuth, async (req, res) => {
   const { role } = req.body;
   if (!['buyer','admin','superadmin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
   try {
@@ -832,7 +916,7 @@ app.put('/api/admin/users/:id/role', async (req, res) => {
 });
 
 // ─── Admin: Orders List ───────────────────────────────────────────────────────
-app.get('/api/admin/orders', async (req, res) => {
+app.get('/api/admin/orders', requireAdminApiAuth, async (req, res) => {
   const { status, order_type, page = 1, limit = 20 } = req.query;
   try {
     let sql = 'SELECT o.*, u.real_name, u.phone FROM orders o LEFT JOIN app_users u ON o.user_id=u.id WHERE 1=1';
@@ -850,7 +934,7 @@ app.get('/api/admin/orders', async (req, res) => {
 });
 
 // ─── Admin: Steel CRUD ──────────────────────────────────────────────────────
-app.post('/api/steel/factories', async (req, res) => {
+app.post('/api/steel/factories', requireAdminApiAuth, async (req, res) => {
   const { name, weekly_capacity, condition_text } = req.body;
   try {
     const [r] = await pool.query(
@@ -863,7 +947,7 @@ app.post('/api/steel/factories', async (req, res) => {
   }
 });
 
-app.delete('/api/steel/factories/:id', async (req, res) => {
+app.delete('/api/steel/factories/:id', requireAdminApiAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM steel_factories WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -873,7 +957,7 @@ app.delete('/api/steel/factories/:id', async (req, res) => {
 });
 
 // ─── Admin: Concrete CRUD ────────────────────────────────────────────────────
-app.post('/api/concrete/stations', async (req, res) => {
+app.post('/api/concrete/stations', requireAdminApiAuth, async (req, res) => {
   const {
     name,
     price,
@@ -915,7 +999,7 @@ app.post('/api/concrete/stations', async (req, res) => {
   }
 });
 
-app.delete('/api/concrete/stations/:id', async (req, res) => {
+app.delete('/api/concrete/stations/:id', requireAdminApiAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM concrete_stations WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -925,7 +1009,7 @@ app.delete('/api/concrete/stations/:id', async (req, res) => {
 });
 
 // ─── Admin: Materials CRUD ───────────────────────────────────────────────────
-app.post('/api/materials/products', async (req, res) => {
+app.post('/api/materials/products', requireAdminApiAuth, async (req, res) => {
   const { name, category_id, unit_price, price, unit, target_qty, group_price } = req.body;
   const actualPrice = price || unit_price || 0;
   try {
@@ -939,7 +1023,7 @@ app.post('/api/materials/products', async (req, res) => {
   }
 });
 
-app.delete('/api/materials/products/:id', async (req, res) => {
+app.delete('/api/materials/products/:id', requireAdminApiAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM material_products WHERE id=?', [req.params.id]);
     res.json({ success: true });

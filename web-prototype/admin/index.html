@@ -1,14 +1,180 @@
-<!-- admin/index.html -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=./dashboard.html">
-  <title>99共享建材 - 管理后台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>99共享建材 - 后台登录</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d17;
+      --surface: #13131f;
+      --border: #252535;
+      --primary: #ff6f00;
+      --text: #e8e8f0;
+      --muted: #8e8ea6;
+      --danger: #ef5350;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top left, rgba(255,111,0,.16), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(25,118,210,.14), transparent 24%),
+        var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      padding: 24px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(19,19,31,.96);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      padding: 32px 28px 26px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,111,0,.14);
+      color: #ffb067;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    h1 { font-size: 26px; margin-bottom: 8px; }
+    .sub { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .field input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0f1020;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255,111,0,.12);
+    }
+    .error {
+      display: none;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      padding: 11px 13px;
+      background: rgba(239,83,80,.12);
+      border: 1px solid rgba(239,83,80,.24);
+      color: #ffb4b1;
+      font-size: 13px;
+    }
+    .submit-btn {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 16px;
+      background: linear-gradient(135deg, #ff8f00, #ff6f00);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .submit-btn:disabled { opacity: .6; cursor: wait; }
+    .footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
+  <div class="login-card">
+    <div class="tag">ADMIN LOGIN</div>
+    <h1>后台登录</h1>
+    <p class="sub">登录后才能进入 99 共享建材管理后台，未登录状态下不再直接放行后台页面。</p>
+
+    <div class="error" id="login-error"></div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="username">账号</label>
+        <input id="username" name="username" autocomplete="username" value="admin" required>
+      </div>
+      <div class="field">
+        <label for="password">密码</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="submit-btn" id="login-submit" type="submit">登录后台</button>
+    </form>
+
+    <div class="footer">默认账号通常为 <strong>admin</strong>，密码取服务器 `.env` 里的 `ADMIN_DEFAULT_PASSWORD`。</div>
+  </div>
+
   <script>
-    window.location.replace('./dashboard.html');
+    const API = `${window.location.origin}/api`;
+    const form = document.getElementById('login-form');
+    const submitBtn = document.getElementById('login-submit');
+    const errorBox = document.getElementById('login-error');
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = 'block';
+    }
+
+    function clearError() {
+      errorBox.style.display = 'none';
+      errorBox.textContent = '';
+    }
+
+    fetch(API + '/admin/me')
+      .then((res) => {
+        if (res.ok) {
+          window.location.replace('./dashboard.html');
+        }
+      })
+      .catch(() => {});
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearError();
+      submitBtn.disabled = true;
+      submitBtn.textContent = '登录中...';
+
+      try {
+        const res = await fetch(API + '/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || data.error || '登录失败');
+        }
+        window.location.replace('./dashboard.html');
+      } catch (err) {
+        showError(err.message || '登录失败，请稍后再试');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '登录后台';
+      }
+    });
   </script>
 </body>
 </html>

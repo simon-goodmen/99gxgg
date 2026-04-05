@@ -250,7 +250,7 @@
         <div class="user-avatar" id="user-avatar-init">A</div>
         <div>
           <div class="user-name" id="user-display-name">Admin</div>
-          <div class="user-role">超级管理员</div>
+          <div class="user-role" id="user-display-role">超级管理员</div>
         </div>
       </div>
       <button class="logout-btn" onclick="doLogout()">退出登录</button>
@@ -668,8 +668,28 @@
 <script>
 const API = `${window.location.origin}/api`;
 let currentOrderId = null;
-function doLogout() {
-  window.location.reload();
+async function doLogout() {
+  try {
+    await fetch(API + '/admin/logout', { method: 'POST' });
+  } finally {
+    window.location.replace('./index.html');
+  }
+}
+
+async function ensureAdminAuth() {
+  const res = await fetch(API + '/admin/me');
+  if (!res.ok) {
+    window.location.replace('./index.html');
+    throw new Error('未登录');
+  }
+  const data = await res.json();
+  const user = data.user || {};
+  const username = user.username || 'Admin';
+  const roleLabelMap = { superadmin: '超级管理员', admin: '管理员' };
+  document.getElementById('user-avatar-init').textContent = username.slice(0, 1).toUpperCase();
+  document.getElementById('user-display-name').textContent = username;
+  document.getElementById('user-display-role').textContent = roleLabelMap[user.role] || '后台账号';
+  return user;
 }
 
 // ── Navigation ──
@@ -720,9 +740,12 @@ setInterval(updateTime, 1000);
 updateTime();
 
 // ── Init ──
-function initDashboard() {
-  document.getElementById('user-avatar-init').textContent = 'A';
-  document.getElementById('user-display-name').textContent = 'Admin';
+async function initDashboard() {
+  try {
+    await ensureAdminAuth();
+  } catch {
+    return;
+  }
   loadHomeStats();
   loadHomeOrders();
   loadConfig();
