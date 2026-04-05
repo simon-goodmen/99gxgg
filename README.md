@@ -185,9 +185,32 @@ npm run export:mini
 │   └── admin/          # Express 后台与管理页面
 ├── assets/             # 项目静态资源 (截图、图标)
 ├── cloudfunctions/     # 云函数示例
+├── scripts/            # 版本同步与部署脚本
+├── release.json        # 当前统一版本配置
+├── VERSION_CURRENT.md  # 当前发布版本索引
 ├── .env.example        # 环境变量模板
 └── load-env.js         # 环境变量加载工具
 ```
+
+## 🏷️ 版本管理
+
+现在版本信息统一由根目录 `release.json` 管理，并同步到：
+
+- `VERSION_CURRENT.md`
+- `VERSION_v*.md`
+- `web-prototype/package.json`
+- `web-prototype/admin/package.json`
+
+更新版本后执行：
+
+```bash
+node scripts/sync-release.js
+```
+
+这样你在 GitHub 上能同时看到：
+
+- 固定入口：`VERSION_CURRENT.md`
+- 历史版本文件：`VERSION_v1.2.md`、`VERSION_v1.3.md`、`VERSION_v1.4.md`
 
 ## 🔐 安全说明
 
@@ -208,6 +231,13 @@ npm install -g pm2
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
+```
+
+如果只是更新后台，推荐统一用仓库脚本：
+
+```bash
+cd /www/wwwroot/99
+bash scripts/deploy-admin.sh
 ```
 
 Nginx 反代保持指向本机 Node 服务：
