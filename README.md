@@ -1,23 +1,28 @@
-# 99-steel-structure-mp (99共享钢构平台)
+# 99gxgg (99共享建材平台)
 
-🏗️ **99共享钢构平台小程序前端** - 致力于钢结构行业的资源数字化共享与协同制造。
+🏗️ **99共享建材平台前端项目**，包含微信小程序与 Web 预览原型，面向钢构、商砼、共享建材、订单追踪与后台管理场景。
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: MiniProgram](https://img.shields.io/badge/Platform-MiniProgram-green.svg)](https://mp.weixin.qq.com/)
 [![Tech: React + Vite](https://img.shields.io/badge/Tech-React%20%2B%20Vite-blue.svg)](https://vitejs.dev/)
 
 ## 📝 项目简介 (Project Overview)
 
-**99共享钢构 (99 Shared Steel Structure)** 是一款专为钢结构行业打造的共享工厂协作平台。本项目为该平台的小程序前端部分，旨在通过数字化手段连接工厂闲置产能与客户需求，实现钢构制造的资源优化配置。
+**99共享建材** 是一套围绕钢构、商砼与建材共享交易的前端项目。本仓库同时包含：
 
-该项目包含小程序核心逻辑及高保真 Web 预览原型，重点展示了用户的个人/企业信息、订单统计、资质审核状态以及工厂共享数据的实时监控。
+- 微信小程序端
+- Web 预览原型
+- 本地后台管理端
+
+项目重点覆盖用户登记、商品展示、下单、物流追踪、后台订单管理和静态数据导出。
 
 ## ✨ 核心功能 (Key Features)
 
-- **📊 智能看板 (Dashboard)**: 实时监控钢构件生产进度与物流信息。
-- **🤝 工厂共享 (Shared Factory)**: 闲置产能发布与智能抢单系统。
-- **👤 个人中心 (User Profile)**: 数字化身份认证、资质管理及财务账单查询。
-- **📱 响应式布局**: 深度适配移动端微信小程序，并提供流畅的工业级交互体验。
+- **📊 智能看板**: 首页统计、实时报价、平台能力展示。
+- **🚛 共享商砼**: 多站点价格、标号选择、锁单与物流跟踪。
+- **🏗️ 共享钢构**: 工厂排产、能力展示、代工下单。
+- **📦 共享建材**: 拼团采购、价格展示与采购需求提交。
+- **👤 个人中心**: 姓名 + 手机号快速登记、资料修改、订单查看。
+- **🛠️ 后台管理**: 站点数据、订单、物流进度、咨询线索管理。
 
 ## 📸 界面展示 (Screenshots)
 
@@ -34,44 +39,113 @@
 
 ## 🛠️ 本地开发 (Local Development)
 
-### Web 预览原型开发
+### 1. 克隆仓库
 
-#### 1. 克隆仓库
 ```bash
-git clone https://github.com/your-username/99-steel-structure-mp.git
-cd 99-steel-structure-mp
+git clone https://github.com/simon-goodmen/99gxgg.git
+cd 99gxgg
 ```
 
-#### 2. 安装 Web 原型依赖
+### 2. 配置环境变量
+
+复制根目录示例文件：
+
+```bash
+copy .env.example .env
+```
+
+然后在 `.env` 中填写真实配置：
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=99app
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+ADMIN_DEFAULT_PASSWORD=change_me_before_use
+```
+
+说明：
+
+- `.env` 已被 `.gitignore` 忽略，不会上传到 GitHub
+- 不要把数据库账号密码写回源码
+- 如果你曾经暴露过旧密码，请先在服务器上完成密码轮换
+
+### 3. 安装 Web 原型依赖
+
 ```bash
 cd web-prototype
 npm install
 ```
 
-#### 3. 启动开发服务器
+### 4. 启动后台服务
+
+```bash
+npm run server
+```
+
+后台默认地址：
+
+- `http://127.0.0.1:5001/admin/`
+- `http://127.0.0.1:5001/api/health`
+
+### 5. 启动 Web 原型
+
 ```bash
 npm run dev
 ```
-启动后，你可以通过浏览器访问 `http://localhost:5173/profile` 查看个人中心预览页，或访问 `http://localhost:5173/steel` 查看主业务看板。
 
-### 小程序开发
+前端默认地址：
 
-#### 1. 环境准备
+- `http://localhost:5173/home`
+- `http://localhost:5173/concrete`
+- `http://localhost:5173/steel`
+- `http://localhost:5173/materials`
+- `http://localhost:5173/profile`
+- `http://localhost:5173/tracking`
+
+### 6. 导出小程序静态数据
+
+小程序展示数据采用静态快照方式，导出命令如下：
+
+```bash
+cd web-prototype/admin
+npm install
+npm run export:mini
+```
+
+执行后会生成：
+
+- `miniprogram/data/home.js`
+- `miniprogram/data/steel.js`
+- `miniprogram/data/concrete.js`
+- `miniprogram/data/materials.js`
+
+### 7. 小程序开发
+
+#### 环境准备
 - 下载并安装 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
 - 注册微信小程序开发者账号
 
-#### 2. 导入项目
+#### 导入项目
 - 打开微信开发者工具
 - 选择 "导入项目"
 - 项目目录选择 `miniprogram` 文件夹
 - AppID 输入你的小程序 AppID（可在微信公众平台获取）
 
-#### 3. 云开发配置（可选）
+#### 开发说明
+
+小程序当前采用两条数据链路：
+
+- 展示数据：读取 `miniprogram/data/*.js` 静态快照
+- 实时写入：咨询和下单请求发往 Web 后台接口
+
+#### 云开发配置（可选）
 如果使用云开发功能：
 - 在开发者工具中启用云开发
 - 配置云环境 ID（参考 `project.config.json`）
 
-#### 4. 开发调试
+#### 开发调试
 - 在开发者工具中进行代码编辑和调试
 - 使用真机调试确保兼容性
 
@@ -80,19 +154,25 @@ npm run dev
 ```text
 99gxgg/
 ├── miniprogram/        # 微信小程序源码
-│   ├── pages/          # 业务页面 (钢构、商砼、物资、追踪、我的)
+│   ├── data/           # 导出的静态展示数据
+│   ├── pages/          # 页面 (钢构、商砼、建材、追踪、我的、咨询)
 │   ├── components/     # 公用组件
-│   └── app.wxss        # 全局设计系统
-├── web-prototype/      # 高保真 Web 预览原型
+│   └── app.wxss        # 全局样式
+├── web-prototype/      # Web 预览原型 + 本地后台
 │   ├── src/
-│   │   ├── components/ # 核心 UI 组件
-│   │   ├── pages/      # 页面视图 (Steel, Profile, etc.)
-│   │   └── index.css   # 全局样式令牌
+│   │   ├── layouts/    # 布局
+│   │   ├── pages/      # 页面视图
+│   │   └── index.css   # 全局样式
+│   └── admin/          # Express 后台与管理页面
 ├── assets/             # 项目静态资源 (截图、图标)
-├── cloudfunctions/     # 云端业务逻辑
-└── project.config.json # 小程序项目配置
+├── cloudfunctions/     # 云函数示例
+├── .env.example        # 环境变量模板
+└── load-env.js         # 环境变量加载工具
 ```
 
-## 📄 开源协议
+## 🔐 安全说明
 
-本项目采用 [MIT License](LICENSE) 协议开源。
+- 仓库已改为通过环境变量读取数据库配置
+- `.env` 不应提交到 Git
+- 建议定期轮换数据库密码和后台初始密码
+- 若历史上曾暴露敏感信息，请同步在服务器侧完成密码变更
