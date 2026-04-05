@@ -4,11 +4,15 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const path = require('path');
+const { loadEnv } = require('../load-env.cjs');
 const pool = require('./db');
 const { STEEL_FACTORY_PATCHES } = require('./defaults');
+const { authenticateAdmin, ensureDefaultAdmin } = require('./admin-auth');
+
+loadEnv();
 
 const app = express();
-const PORT = 5001;
+const PORT = Number(process.env.PORT || 5001);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -121,20 +125,30 @@ app.get('/', (req, res) => {
 });
 
 // ─── Health ───────────────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', database: 'connected' });
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1 AS ok');
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      port: PORT,
+      uptimeSeconds: Math.round(process.uptime())
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      database: 'disconnected',
+      error: err.message
+    });
+  }
 });
 
 // ─── Admin Login ──────────────────────────────────────────────────────────────
 app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const [rows] = await pool.query(
-      'SELECT * FROM admin_users WHERE username = ? AND password = ?',
-      [username, password]
-    );
-    if (rows.length > 0) {
-      const user = { id: rows[0].id, username: rows[0].username, role: rows[0].role };
+    const user = await authenticateAdmin(pool, username, password);
+    if (user) {
       const token = createAdminSession(user);
       setAdminSessionCookie(res, token);
       res.json({ success: true, user });
@@ -1032,10 +1046,50 @@ app.delete('/api/materials/products/:id', requireAdminApiAuth, async (req, res) 
   }
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
-app.listen(PORT, async () => {
+function installProcessHandlers(server) {
+  const shutdown = async (signal) => {
+    console.log(`[Shutdown] Received ${signal}, closing server...`);
+    server.close(async () => {
+      try {
+        await pool.end();
+      } catch (err) {
+        console.error('[Shutdown] DB pool close failed:', err.message);
+      } finally {
+        process.exit(0);
+      }
+    });
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('unhandledRejection', (reason) => {
+    console.error('[UnhandledRejection]', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('[UncaughtException]', err);
+  });
+}
+
+async function bootstrap() {
+  const adminBootstrap = await ensureDefaultAdmin(pool);
+  if (adminBootstrap.created) {
+    console.log(`[Bootstrap] Default admin created: ${adminBootstrap.username}`);
+  } else if (adminBootstrap.synced) {
+    console.log(`[Bootstrap] Default admin password upgraded for: ${adminBootstrap.username}`);
+  }
+
   await syncDefaultBusinessData();
-  console.log(`--- Backend Server Running on http://localhost:${PORT} ---`);
-  console.log(`--- Admin UI: http://localhost:${PORT}/admin ---`);
+
+  const server = app.listen(PORT, () => {
+    console.log(`--- Backend Server Running on http://localhost:${PORT} ---`);
+    console.log(`--- Admin UI: http://localhost:${PORT}/admin ---`);
+  });
+
+  installProcessHandlers(server);
+}
+
+bootstrap().catch((err) => {
+  console.error('[Bootstrap] Fatal error:', err);
+  process.exit(1);
 });
 

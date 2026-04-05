@@ -62,13 +62,17 @@ DB_PORT=3306
 DB_NAME=99app
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
+PORT=5001
+ADMIN_DEFAULT_USERNAME=admin
 ADMIN_DEFAULT_PASSWORD=change_me_before_use
+ADMIN_SYNC_PASSWORD_ON_BOOT=false
 ```
 
 说明：
 
 - `.env` 已被 `.gitignore` 忽略，不会上传到 GitHub
 - 不要把数据库账号密码写回源码
+- 建议把服务端 `.env` 放在 `web-prototype/.env`
 - 如果你曾经暴露过旧密码，请先在服务器上完成密码轮换
 
 ### 3. 安装 Web 原型依赖
@@ -84,10 +88,25 @@ npm install
 npm run server
 ```
 
+或者直接在 `web-prototype/admin` 目录执行：
+
+```bash
+npm start
+```
+
 后台默认地址：
 
 - `http://127.0.0.1:5001/admin/`
 - `http://127.0.0.1:5001/api/health`
+
+常用后台命令：
+
+```bash
+cd web-prototype/admin
+npm run check:admin
+npm run fix:admin
+npm run reset:admin -- admin YourNewPassword123
+```
 
 ### 5. 启动 Web 原型
 
@@ -176,3 +195,29 @@ npm run export:mini
 - `.env` 不应提交到 Git
 - 建议定期轮换数据库密码和后台初始密码
 - 若历史上曾暴露敏感信息，请同步在服务器侧完成密码变更
+- 后台管理员密码已改为安全哈希存储，旧的明文密码会在首次成功登录后自动升级
+
+## 🚢 服务器部署建议
+
+推荐使用 PM2 常驻后台，避免每次上传后手工 `nohup`：
+
+```bash
+cd /www/wwwroot/99/web-prototype/admin
+npm install
+npm install -g pm2
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup
+```
+
+Nginx 反代保持指向本机 Node 服务：
+
+```nginx
+location ^~ /admin/ {
+    proxy_pass http://127.0.0.1:5001/admin/;
+}
+
+location ^~ /api/ {
+    proxy_pass http://127.0.0.1:5001/api/;
+}
+```

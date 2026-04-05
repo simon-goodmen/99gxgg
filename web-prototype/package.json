@@ -1,14 +1,17 @@
 {
   "name": "web-prototype",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node admin/index.js"
+    "server": "node admin/index.js",
+    "server:check-admin": "node admin/check_admin.js",
+    "server:fix-admin": "node admin/fix_db.js",
+    "server:reset-admin": "node admin/reset_admin_password.js"
   },
   "dependencies": {
     "lucide-react": "^1.7.0",
