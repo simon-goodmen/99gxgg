@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise');
-const { requireDbConfig, loadEnv } = require('../../load-env');
+const { requireDbConfig, loadEnv } = require('../load-env.cjs');
 
 loadEnv();
 const dbConfig = requireDbConfig();
