@@ -207,6 +207,13 @@ npm run export:mini
 node scripts/sync-release.js
 ```
 
+如果要创建下一个版本模板，先执行：
+
+```bash
+node scripts/create-release.js 1.5.0 "这里写版本标题"
+node scripts/sync-release.js
+```
+
 这样你在 GitHub 上能同时看到：
 
 - 固定入口：`VERSION_CURRENT.md`
